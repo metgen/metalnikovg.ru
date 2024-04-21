@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+html,
+.lightbox-overlay {
+  width: 100vw;
+}
+
+html.prevent-scroll {
+  overflow-y: hidden;
+}
+
+html.lightbox-loading,
+html.lightbox-loading * {
+  cursor: wait !important;
+}
+
+.task-list-item::before {
+  @apply hidden;
+}
+
+.task-list-item {
+  @apply list-none;
+}
+
+.footnotes {
+  @apply mt-12 border-t border-gray-200 pt-8 dark:border-gray-700;
+}
+
+.data-footnote-backref {
+  @apply no-underline;
+}
+
+.csl-entry {
+  @apply my-5;
+}
+
+/* START: CSS Prose */
+.prose {
+  font-size: 18px;
+}
+
+.prose h2 {
+  font-size: 28px;
+}
+
+.prose h3 {
+  font-size: 24px;
+}
+
+.prose img {
+  margin: 0 auto;
+  border-radius: 12px;
+}
+
+.prose blockquote {
+  background: #ebebeb;
+}
+/* END: CSS Prose */
+
+.dark .dark\:prose-dark blockquote {
+  background: #5c6370;
+}
+
+/* START: CSS Github discussion */
+#comments-container .giscus-frame {
+  @apply w-full;
+}
+/* END: CSS Github discussion */
+
+/* START: CSS popular tags */
+.popular-tags .javascript {
+  @apply bg-amber-400;
+}
+
+.popular-tags .typescript {
+  @apply bg-blue-500;
+}
+
+.popular-tags .nestjs {
+  @apply bg-rose-500;
+}
+
+.popular-tags .react {
+  @apply bg-sky-500;
+}
+
+.popular-tags .devops {
+  @apply bg-sky-600;
+}
+
+.popular-tags .database {
+  @apply bg-green-900;
+}
+
+.popular-tags .docker {
+  @apply bg-blue-700;
+}
+
+.popular-tags .linux {
+  @apply bg-orange-500;
+}
+
+.popular-tags .powershell {
+  @apply bg-sky-500;
+}
+
+.popular-tags .windows {
+  @apply bg-blue-500;
+}
+
+.popular-tags .bash {
+  @apply bg-pink-500;
+}
+
+.popular-tags .android {
+  @apply bg-green-500;
+}
+
+.popular-tags .software {
+  @apply bg-red-500;
+}
+
+.popular-tags .network {
+  @apply bg-purple-500;
+}
+/* END: CSS popular tags */
+
+/* https://stackoverflow.com/questions/61083813/how-to-avoid-internal-autofill-selected-style-to-be-applied */
+input:-webkit-autofill,
+input:-webkit-autofill:focus {
+  transition: background-color 600000s 0s, color 600000s 0s;
+}

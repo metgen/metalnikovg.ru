@@ -1,0 +1,126 @@
+---
+title: 'Настройка моста'
+date: '2024-03-03'
+lastmod: '2024-03-03'
+tags: ['linux', 'bash', 'network']
+summary: 'Настройка мостового соединения в Linux, для доступа виртуальной машиы в локальную сеть'
+layout: PostSimple
+---
+
+import Twemoji from './components/Twemoji';
+
+# Настройка моста
+
+## Настройка моста при помощи NMCLI
+
+Для того чтобы просмотреть все наши сетевые подключения введем
+
+```bash
+nmcli con show
+```
+
+![nmcli](https://gitbook.metalnikovg.ru/~gitbook/image?url=https://52982121-files.gitbook.io/%7E/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%252FFSEM7mIjLMYaJfpjvbaz%252Fuploads%252FR55nZpTLVJ7g2Ep6VXnD%252F%25D0%25A1%25D0%25BD%25D0%25B8%25D0%25BC%25D0%25BE%25D0%25BA%2520%25D1%258D%25D0%25BA%25D1%2580%25D0%25B0%25D0%25BD%25D0%25B0%2520%25D0%25BE%25D1%2582%25202024-02-07%252021-52-51.png%3Falt=media%26token=e87a1fa4-4610-4461-b04c-185e5aa736f0&width=768&dpr=1&quality=100&sign=da0a62b83949274fda59911085b929f9e861a4fed0c9b5fb3bcf05c3f60f0caa)
+
+Здесь мы увидим все наши сетевые подключения, их имя, `UUID` - уникальный ID сетевого подключения, тип и имя интерфейса.
+
+Например у меня имеется 3 сетевых подключения:
+
+1. Проводное подключение для интерфейса enp5s0
+2. lo (loopback интерфейс) - в отличие от обычных сетевых интерфейсов, которые представляют собой физические аппаратные устройства, интерфейс обратной связи является виртуальным интерфейсом. Таким образом, он не представляет собой никаких аппаратных устройств и не имеет физических кабелей или возможности подключения к другим устройствам.
+
+   Это лишь часть внутреннего стека TCP/IP операционной системы. Машина может использовать этот интерфейс для связи сама с собой, и он очень полезен при устранении неполадок и диагностике.
+
+   Интерфейс обратной связи использует IP-адрес, как и любой другой сетевой интерфейс. Для интерфейсов обратной связи существует зарезервированный диапазон адресов IPv4 127.0.0.0/8 . Интерфейс обратной связи обычно использует первый адрес 127.0.0.1 в этом диапазоне.
+
+3. И подключение к VPN Wireguard, которое сейчас неактивно
+
+Для дальнейшего удобства сменим имя `Проводное подключение 1` на `eth0`
+
+```bash
+sudo nmcli con mod 'Проводное подключение 1' con-name 'eth0'
+```
+
+Создадим соединение типа bridge с именемм br0, интерфейсом br0&#x20;
+
+```bash
+nmcli con add ifname br0 type bridge con-name br0
+```
+
+Далее нужно создать подключение которое будет соединять интерфейс br0 и enp5s0, тип подключения ethernet, имя bridge-slave-enp5s0, автоподключение - да
+
+```bash
+nmcli con add ifname enp5s0 type bridge-slave autoconnect yes con-name bridge-slave-enp5s0 master br0
+```
+
+Отключаем STP
+
+```bash
+nmcli con mod br0 bridge.stp no
+```
+
+Удалим наше проводное подключение
+
+```bash
+nmcli con del eth0
+```
+
+- После этого у нас пропадет соединение с сетью
+
+Если вы хотите получить настройки по DHCP вводим
+
+```bash
+nmcli con mod br0 ipv4.method auto
+```
+
+Если хотите задать свои настройки сети
+
+```bash
+nmcli con mod br0 ipv4.addresses 192.168.0.10/24
+nmcli con mod br0 ipv4.gateway 192.168.0.1
+nmcli con mod br0 ipv4.dns '1.1.1.1,8.8.8.8,8.8.4.4'
+nmcli con mod br0 ipv4.dns-search 'example.com'
+```
+
+Активируем подключение br0
+
+```bash
+nmcli con up br0
+```
+
+Еще раз проверяем наши сетевые подключения
+
+```bash
+nmcli con show --activ
+```
+
+![nmcli con show --activ](https://gitbook.metalnikovg.ru/~gitbook/image?url=https://52982121-files.gitbook.io/%7E/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%252FFSEM7mIjLMYaJfpjvbaz%252Fuploads%252FUelyMleNR4oq39ZNRysP%252F%25D0%25A1%25D0%25BD%25D0%25B8%25D0%25BC%25D0%25BE%25D0%25BA%2520%25D1%258D%25D0%25BA%25D1%2580%25D0%25B0%25D0%25BD%25D0%25B0%2520%25D0%25BE%25D1%2582%25202024-02-07%252023-40-56.png%3Falt=media%26token=d58de031-368d-437b-9a4d-b1dd8593ff98&width=768&dpr=1&quality=100&sign=7d4b2a8882fb2aa1146299523601939a14098f911d54c4247709aa7ce019d218)
+
+Перезапускаем NetworkManager
+
+```bash
+sudo systemctl restart NetworkManager
+```
+
+Теперь мы можем подключать наши виртуальные машины к локальной сети.
+
+## Настройка моста при помощи NMTUI
+
+NetworkManager-tui - это консольная утилита с визуальной оболочкой для настройки сетевых подключений NetworkManager
+
+Установка
+
+```bash
+dnf install NetworkManager-tui
+```
+
+```bash
+apt-get install NetworkManager-tui
+```
+
+![nmtui](https://gitbook.metalnikovg.ru/~gitbook/image?url=https://52982121-files.gitbook.io/%7E/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%252FFSEM7mIjLMYaJfpjvbaz%252Fuploads%252FM333Q0eWd2gAg8EhpA82%252F%25D0%25A1%25D0%25BD%25D0%25B8%25D0%25BC%25D0%25BE%25D0%25BA%2520%25D1%258D%25D0%25BA%25D1%2580%25D0%25B0%25D0%25BD%25D0%25B0%2520%25D0%25BE%25D1%2582%25202024-02-07%252023-16-53.png%3Falt=media%26token=d813fc79-2000-4785-bcb1-a757d59b0065&width=768&dpr=1&quality=100&sign=8bb557ef2cd8a427a1c8f2d03745d448be1c481b296ef3e56a434245a3825c03)
+
+Здесь вы можете в визуальном режиме создавать, редактировать, активировать ваши сетевые подключения.
+
+## Ссылки
+
+[Статья на Gitbook](https://gitbook.metalnikovg.ru/linux/virtualizaciya/nastroika-mosta)
