@@ -5,7 +5,7 @@ import Link from './Link';
 
 const BuildWith = () => (
   <div className="flex items-center space-x-1">
-    <span className="mr-1 text-gray-500 dark:text-gray-400">Собран с помощью</span>
+    <span className="mr-1 text-gray-500 dark:text-gray-400">Создан с помощью</span>
 
     <div className="flex space-x-1.5">
       <Link href="https://nextjs.org?ref=metalnikovg.ru">

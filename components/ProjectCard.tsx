@@ -47,7 +47,7 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
           </p>
 
           <div className="mb-3 flex flex-wrap space-x-1.5">
-            <span className="shrink-0">Собран с помощью: </span>
+            <span className="shrink-0">Создан с помощью: </span>
             {builtWith?.map((tool, index) => {
               return (
                 <span key={index} className="font-semibold text-gray-600 dark:text-gray-300">
