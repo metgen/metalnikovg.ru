@@ -7,7 +7,7 @@
     <a href="https://github.com/metgen/metalnikovg.ru/pulls"><img src="https://img.shields.io/github/issues-pr/metgen/metalnikovg.ru" alt="Pull Requests Badge"/></a>
     <a href="https://github.com/metgen/metalnikovg.ru/issues"><img src="https://img.shields.io/github/issues/metgen/metalnikovg.ru" alt="Issues Badge"/></a>
     <a href="https://github.com/metgen/metalnikovg.ru/graphs/contributors"><img alt="GitHub contributors" src="https://img.shields.io/github/contributors/metgen/metalnikovg.ru?color=2b9348"></a>
-    <a href="https://github.com/metgen/metalnikovg.ru/blob/master/LICENSE"><img src="https://img.shields.io/github/license/metgen/metalnikovg.ru?color=2b9348" alt="License Badge"/></a>
+    <a href="https://github.com/metgen/metalnikovg.ru/blob/main/LICENSE"><img src="https://img.shields.io/github/license/metgen/metalnikovg.ru?color=2b9348" alt="License Badge"/></a>
 </div>
 <br>
 <p align="center"><i>Посетите <a href="https://metalnikovg.ru">вебсайт</a> проекта</i></p>
