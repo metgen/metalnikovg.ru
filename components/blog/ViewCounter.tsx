@@ -17,7 +17,7 @@ const ViewCounter = ({ slug, className }: ViewCounterProps) => {
     registerView();
   }, [slug]);
 
-  return <span className={className}>{views > 0 ? views.toLocaleString() : '---'} views</span>;
+  return <span className={className}>{views > 0 ? views.toLocaleString() : '---'} просмотров</span>;
 };
 
 export default ViewCounter;

@@ -40,6 +40,9 @@ const TypedBios = () => {
         <li>
           Немного путешествую <Twemoji emoji="palm-tree" />
         </li>
+        <li>
+          Увлекаюсь мобильной фотографией <Twemoji emoji="frame-with-picture" />
+        </li>
       </ul>
       <span ref={el} className="text-neutral-900 dark:text-neutral-200" />
     </div>

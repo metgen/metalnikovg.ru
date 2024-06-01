@@ -93,13 +93,13 @@ export default function ListLayoutWithTags({
         <div className="hidden h-full max-h-screen min-w-[240px] max-w-[240px] flex-wrap overflow-auto rounded bg-gray-200 pt-5 shadow-md dark:bg-[#24283b] dark:shadow-gray-800/40 sm:flex">
           <div className="px-6 py-4">
             {pathname.startsWith('/blog') ? (
-              <h3 className="font-bold uppercase text-primary">Все посты</h3>
+              <h3 className="font-bold uppercase text-primary">Все записи</h3>
             ) : (
               <Link
                 href={`/blog`}
                 className="font-bold uppercase text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary"
               >
-                Все посты
+                Все записи
               </Link>
             )}
             <ul>
@@ -141,7 +141,7 @@ export default function ListLayoutWithTags({
                 aria-label="Search articles"
                 type="text"
                 onChange={(e) => setSearchValue(e.target.value)}
-                placeholder="Search articles"
+                placeholder="Ключевые слова"
                 className="block w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-sky-500 focus:ring-sky-500 dark:border-gray-900 dark:bg-gray-800 dark:text-gray-100"
               />
             </label>

@@ -9,9 +9,9 @@ const Tag = ({ text }: Props) => {
   return (
     <Link
       href={`/tags/${kebabCase(text)}`}
-      className="mr-3 text-sm font-medium uppercase text-primary hover:text-sky-600 dark:hover:text-sky-400"
+      className="mr-3 text-sm font-medium uppercase text-primary hover:text-teal-600 dark:hover:text-teal-400"
     >
-      {text.split(' ').join('-')}
+      <span data-umami-event="tag">#{text.split(' ').join('-')}</span>
     </Link>
   );
 };

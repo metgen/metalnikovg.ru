@@ -6,7 +6,7 @@ const siteMetadata = {
   author: 'Геннадий',
   fullName: 'Метальников Геннадий',
   headerTitle: 'Metalnikovg.ru',
-  description: 'О всяком, о разном.',
+  description: 'Записи по IT теме',
   language: 'ru-ru',
   theme: 'system',
   siteUrl: 'https://metalnikovg.ru',
