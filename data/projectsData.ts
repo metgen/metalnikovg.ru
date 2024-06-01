@@ -11,6 +11,7 @@ const projectsData: Project[] = [
   {
     type: 'main',
     title: 'GitBook',
+    description: 'Личная база знаний',
     imgSrc: '/static/images/projects/gitbook.png',
     url: 'https://gitbook.metalnikovg.ru',
     builtWith: ['GitBook', 'GitHub', 'Markdown'],
@@ -25,7 +26,6 @@ const projectsData: Project[] = [
   {
     type: 'self',
     title: 'MKT-monitoring',
-    // description: 'Мониторинг роутера Mikrotik', //
     imgSrc: '/static/images/projects/mkt-monitoring.png',
     repo: 'mkt_monitoring',
     builtWith: ['Grafana', 'Prometheus', 'Blackbox', 'Nginx', 'Docker'],
