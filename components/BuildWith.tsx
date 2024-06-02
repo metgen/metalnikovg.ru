@@ -14,7 +14,7 @@ const BuildWith = () => (
       <Link href="https://tailwindcss.com?ref=metalnikovg.ru">
         <BrandIcon type="TailwindCSS" className="h-5 w-5" />
       </Link>
-      <Link href="https://www.typescriptlang.org?ref=metalnikovg.ruu">
+      <Link href="https://www.typescriptlang.org?ref=metalnikovg.ru">
         <BrandIcon type="Typescript" className="h-5 w-5" />
       </Link>
       <Link href="https://umami.is?ref=metalnikovg.ru" className="pl-px">

@@ -6,7 +6,7 @@ const projectsData: Project[] = [
     title: 'Персональный веб-сайт',
     imgSrc: '/static/images/projects/personal_blog.png',
     repo: 'metalnikovg.ru',
-    builtWith: ['Next.js', 'Tailwind', 'Typescript', 'Prisma', 'Umami'],
+    builtWith: ['Next.js', 'Tailwind', 'Typescript', 'Umami'],
   },
   {
     type: 'main',

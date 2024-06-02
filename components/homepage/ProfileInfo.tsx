@@ -78,7 +78,7 @@ const ProfileCardInfo = () => {
             href={siteMetadata.vk}
             rel="noreferrer"
             className="flex items-center text-sm hover:underline"
-            data-umami-event="profile-card-instagram"
+            data-umami-event="profile-card-vk"
           >
             <IconBrandVk size={20} strokeWidth={2} />
             <span className="ml-px text-gray-500">/</span>
