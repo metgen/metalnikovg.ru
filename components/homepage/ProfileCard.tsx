@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-// import SpotifyNowPlaying from '@/components/homepage/SpotifyNowPlaying'; //
+import SpotifyNowPlaying from '@/components/homepage/SpotifyNowPlaying';
 import ProfileCardInfo from '@/components/homepage/ProfileInfo';
 
 const ProfileCard = () => {
@@ -77,7 +77,7 @@ const ProfileCard = () => {
           }}
           priority
         />
-        {/* <SpotifyNowPlaying /> */}
+        <SpotifyNowPlaying />
         <ProfileCardInfo />
         <span className="h-1.5 bg-gradient-to-r from-teal-300 via-teal-500 to-teal-600"></span>
       </div>
