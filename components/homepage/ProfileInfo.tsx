@@ -25,7 +25,7 @@ const ProfileCardInfo = () => {
             </a>
           </p>
         </div>
-        <div className="flex items-center">
+        {/* <div className="flex items-center">
           <IconSchool name="study" size={20} strokeWidth={2} />
           <p className="px-2">
             Инженер-гидролог @{' '}
@@ -33,7 +33,7 @@ const ProfileCardInfo = () => {
               РГГМУ
             </a>
           </p>
-        </div>
+        </div> */}
         <div className="flex items-center">
           <IconMapPin name="map-pin" size={20} strokeWidth={2} />
           <p className="px-2">
