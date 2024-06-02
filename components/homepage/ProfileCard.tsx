@@ -1,8 +1,8 @@
 import { clsx } from 'clsx';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import ProfileInfo from '@/components/homepage/ProfileInfo';
-// import SpotifyNowPlaying from '@/components/homepage/SpotifyNowPlaying';
+// import SpotifyNowPlaying from '@/components/homepage/SpotifyNowPlaying'; //
+import ProfileCardInfo from '@/components/homepage/ProfileInfo';
 
 const ProfileCard = () => {
   const ref = useRef(null);
@@ -66,7 +66,7 @@ const ProfileCard = () => {
       >
         <Image
           src={'/static/images/avatar.jpg'}
-          alt="avatar"
+          alt="avatar_description"
           width={550}
           height={350}
           style={{
@@ -78,8 +78,8 @@ const ProfileCard = () => {
           priority
         />
         {/* <SpotifyNowPlaying /> */}
-        <ProfileInfo />
-        <div className="h-1.5 bg-gradient-to-r from-green-300 via-blue-500 to-purple-600"></div>
+        <ProfileCardInfo />
+        <span className="h-1.5 bg-gradient-to-r from-teal-300 via-teal-500 to-teal-600"></span>
       </div>
     </div>
   );

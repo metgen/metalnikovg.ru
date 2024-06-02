@@ -20,9 +20,8 @@ import Heading from '@/components/homepage/Heading';
 import TypedBios from '@/components/homepage/TypedBios';
 import ShortDescription from '@/components/homepage/ShortDescription';
 import GitBook from '@/components/homepage/GitBook';
-// import SpotifyNowPlaying from '@/components/homepage/SpotifyNowPlaying'; //
 import PopularTags from '@/components/homepage/PopularTags';
-import Avatar from '@/components/homepage/Avatar';
+import ProfileCard from '@/components/homepage/ProfileCard';
 
 const MAX_DISPLAY = 3;
 
@@ -62,7 +61,7 @@ export default function Home({ posts }: InferGetStaticPropsType<typeof getStatic
             </div>
           </div>
           <div className="hidden xl:block">
-            <Avatar />
+            <ProfileCard />
           </div>
         </div>
       </div>
