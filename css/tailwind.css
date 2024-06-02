@@ -95,44 +95,44 @@ html.lightbox-loading * {
   @apply bg-sky-500;
 }
 
-.popular-tags .devops {
-  @apply bg-sky-600;
-}
-
 .popular-tags .database {
   @apply bg-green-900;
 }
 
 .popular-tags .docker {
-  @apply bg-blue-700;
+  @apply bg-sky-700;
 }
 
 .popular-tags .linux {
-  @apply bg-orange-500;
+  @apply bg-fuchsia-900;
 }
 
 .popular-tags .powershell {
-  @apply bg-sky-500;
+  @apply bg-indigo-900;
 }
 
 .popular-tags .windows {
-  @apply bg-blue-500;
+  @apply bg-blue-900;
 }
 
 .popular-tags .bash {
-  @apply bg-pink-500;
+  @apply bg-green-900;
 }
 
 .popular-tags .android {
-  @apply bg-green-500;
-}
-
-.popular-tags .software {
-  @apply bg-red-500;
+  @apply bg-green-700;
 }
 
 .popular-tags .network {
-  @apply bg-purple-500;
+  @apply bg-orange-900;
+}
+
+.popular-tags .homelab {
+  @apply bg-teal-900;
+}
+
+.popular-tags .mikrotik {
+  @apply bg-gray-800;
 }
 /* END: CSS popular tags */
 

@@ -3,10 +3,11 @@ import { formatDate } from 'pliny/utils/formatDate';
 import type { BlogMetaProps } from '@/types/index';
 
 import { Twemoji } from '../Twemoji';
-import ViewCounter from './ViewCounter';
+// import ViewCounter from './ViewCounter';
 import siteMetadata from '@/data/siteMetadata';
 
-const BlogMeta = ({ date, slug, readingTime }: BlogMetaProps) => {
+// Add slug, to enable view count
+const BlogMeta = ({ date, readingTime }: BlogMetaProps) => {
   return (
     <dd className="flex-column flex gap-1 font-semibold text-gray-500 dark:text-gray-400">
       <time dateTime={date} className="flex items-center">

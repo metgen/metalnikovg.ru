@@ -22,9 +22,10 @@ import Mongodb from 'public/static/icons/mongodb.svg';
 import Windows from 'public/static/icons/windows.svg';
 import Linux from 'public/static/icons/linux.svg';
 import Android from 'public/static/icons/android.svg';
-import Software from 'public/static/icons/software.svg';
 import Powershell from 'public/static/icons/powershell.svg';
 import Network from 'public/static/icons/network.svg';
+import Homelab from 'public/static/icons/homelab.svg';
+import Mikrotik from 'public/static/icons/mikrotik.svg';
 
 export const BrandIconsMap = {
   React,
@@ -51,9 +52,10 @@ export const BrandIconsMap = {
   Windows,
   Linux,
   Android,
-  Software,
   Powershell,
   Network,
+  Homelab,
+  Mikrotik,
 };
 
 export type BrandIconType = keyof typeof BrandIconsMap;
@@ -67,7 +69,7 @@ const BrandIcon = (props: { type: keyof typeof BrandIconsMap; className?: string
     return <div>Missing icon for {type}.</div>;
   }
 
-  return <Icon className={className || 'h-16 w-16 lg:h-14 lg:w-14 xl:h-20 xl:w-20'} fill="currentColor" />;
+  return <Icon className={className || 'h-16 w-16 lg:h-14 lg:w-14 xl:h-20 xl:w-20'} fill="white" />;
 };
-
+// fill="currentColor" for invert svg when switch theme
 export default BrandIcon;

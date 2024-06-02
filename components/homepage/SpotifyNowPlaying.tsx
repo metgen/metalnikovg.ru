@@ -12,10 +12,10 @@ const SpotifyNowPlaying = () => {
   const { songUrl, title, artist } = (response.data as SpotifyNowPlayingData) || {};
 
   return (
-    <div className="my-3 flex max-w-[540px] items-center gap-2 rounded bg-gray-200 px-3 py-2 shadow-md dark:bg-[#24283b] dark:shadow-gray-800/40">
+    <div className="flex items-center bg-gray-900 px-3 py-2 xl:px-6">
       <Spotify className="w-6 flex-shrink-0 text-spotify" />
 
-      <div className="inline-flex truncate">
+      <div className="ml-2 inline-flex truncate">
         {songUrl ? (
           <>
             <MusicBar />

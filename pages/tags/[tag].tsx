@@ -41,7 +41,7 @@ export async function getStaticProps({ params }: { params: { tag: string } }) {
 
 export default function Tag({ blogs, tag, tagCounts }: { blogs: Blog[]; tag: string; tagCounts: TagCounts }) {
   if (!tag) {
-    return <div>Тегов не найдено.</div>;
+    return <div>Тэгов не найдено.</div>;
   }
 
   const { title, headerTitle, description } = siteMetadata;
@@ -50,7 +50,7 @@ export default function Tag({ blogs, tag, tagCounts }: { blogs: Blog[]; tag: str
     <>
       <PageSEO title={`Блог - ${headerTitle} - ${title}`} description={description} />
 
-      <ListLayoutWithTags posts={blogs} tagCounts={tagCounts} title={`Тег: ${capitalize(tag)}`} />
+      <ListLayoutWithTags posts={blogs} tagCounts={tagCounts} title={`Тэг: ${capitalize(tag)}`} />
     </>
   );
 }
