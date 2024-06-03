@@ -19,7 +19,7 @@ const ProfileCardInfo = () => {
         <div className="flex items-center">
           <IconBriefcase size={20} strokeWidth={2} />
           <p className="px-2">
-            Tech Support @{' '}
+            Technical Support @{' '}
             <a className="hover:underline" target="_blank" href="https://ozon.tech/" rel="noreferrer">
               OzonTech
             </a>

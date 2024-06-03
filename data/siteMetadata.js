@@ -3,9 +3,9 @@
 
 const siteMetadata = {
   title: 'Личный блог',
-  author: 'Геннадий',
+  author: 'Метальников Геннадий',
   fullName: 'Метальников Геннадий',
-  headerTitle: 'Metalnikovg.ru',
+  headerTitle: 'Metalnikov Gennadiy',
   description: 'Записи по IT теме',
   language: 'ru-ru',
   theme: 'system',

@@ -104,7 +104,7 @@ html.lightbox-loading * {
 }
 
 .popular-tags .linux {
-  @apply bg-fuchsia-900;
+  @apply bg-amber-500;
 }
 
 .popular-tags .powershell {
@@ -124,7 +124,7 @@ html.lightbox-loading * {
 }
 
 .popular-tags .network {
-  @apply bg-orange-900;
+  @apply bg-rose-900;
 }
 
 .popular-tags .homelab {
