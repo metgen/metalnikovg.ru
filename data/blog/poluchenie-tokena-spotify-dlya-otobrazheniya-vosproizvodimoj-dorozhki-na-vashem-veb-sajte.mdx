@@ -1,0 +1,91 @@
+---
+title: 'Получение токена Spotify для отображения воспроизводимой дорожки на вашем веб-сайте'
+date: '2024-06-05'
+lastmod: '2024-06-05'
+tags: ['token', 'spotify-api', 'spotify']
+summary: 'Получение refresh токена Spotify для отображения воспроизводимой дорожки на вашем веб-сайте'
+layout: PostSimple
+---
+
+# Получение refresh токена Spotify для отображения воспроизводимой дорожки на вашем веб-сайте
+
+Если вы хотите отобразить трек, который сейчас воспроизводится в Spotify, на своем веб-сайте, вам необходимо получить токен от Spotify. Этот токен будет использоваться для получения информации о воспроизводимом треке из API Spotify.
+
+## Создайте приложение Spotify
+
+Во-первых, для этого необходимо создать приложение Spotify, чтобы получить учетные данные для создания токена.
+
+- Перейдите на [Spotify для разработчиков](https://developer.spotify.com/dashboard/applications) и войдите в свою учетную запись Spotify.
+- Нажмите кнопку «Create app» .
+- Заполните форму, указав название и описание приложения.
+- Добавьте URI перенаправления. Этот URI будет использоваться для перенаправления в ваше локальное приложение после аутентификации. Например, `http://localhost:3434`.
+- Нажмите кнопку «Create» .
+- После создания приложения перейдите на страницу настроек и скопируйте значения Client ID и Client secret. Мы будем использовать эти значения на следующем шаге.
+
+![spotify_app](/static/images/blog/get_spotify_token/spotify_app.png)
+
+## Получение токена
+
+Получать refresh tokten будем с помощью скрипта написанного на Python.
+
+Переходим на страницу репозитория [metgen/get-spotify-refresh-token](https://github.com/metgen/get-spotify-refresh-token) и следуем инструкции в файле `README`
+
+## Получение воспроизводимого трека
+
+Теперь, когда у нас есть refresh токен, мы можем использовать его для получения воспроизводимого трека из API Spotify.
+
+Используйте этот код, чтобы получить воспроизводимую сейчас дорожку на вашем node сервере:
+
+```typescript
+import fetch from 'isomorphic-unfetch'
+
+let SPOTIFY_TOKEN_API = `https://accounts.spotify.com/api/token`
+let SPOTIFY_NOW_PLAYING_API = `https://api.spotify.com/v1/me/player/currently-playing`
+let SPOTIFY_TOP_TRACKS_API = `https://api.spotify.com/v1/me/top/tracks`
+
+let {
+  SPOTIFY_CLIENT_ID: client_id,
+  SPOTIFY_CLIENT_SECRET: client_secret,
+  SPOTIFY_REFRESH_TOKEN: refresh_token,
+} = process.env
+
+let basic = Buffer.from(`${client_id}:${client_secret}`).toString('base64')
+
+async function getAccessToken() {
+  let response = await fetch(SPOTIFY_TOKEN_API, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${basic}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token,
+    }),
+  })
+
+  return response.json()
+}
+
+export async function getNowPlaying() {
+  let { access_token } = await getAccessToken()
+  let url = new URL(SPOTIFY_NOW_PLAYING_API)
+  url.searchParams.append('additional_types', 'track,episode')
+
+  return fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  })
+}
+```
+
+Не забудьте добавить необходимые переменные среды в `.env` файл.
+
+```bash
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+SPOTIFY_REFRESH_TOKEN=your_spotify_refresh_token
+```
+
+Теперь вы можете использовать функцию `getNowPlaying` для получения воспроизводимой сейчас дорожки из API Spotify.
