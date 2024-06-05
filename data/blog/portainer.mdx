@@ -1,0 +1,53 @@
+---
+title: 'Portainer - web-интерфейс для управления Docker'
+date: '2024-06-06'
+lastmod: '2024-06-06'
+tags: ['docker', 'portainer', 'homelab']
+summary: 'Portainer - web-интерфейс для управления Docker'
+layout: PostSimple
+---
+
+# Portainer
+
+Portainer - это проект с открытым исходным кодом, представляющий собой образ графического web-интерфейса для управления Docker. Помимо предоставления полной информации об установленном Docker, Portainer позволяет управлять всеми сущностями Docker, включая управление контейнерами, образами, стеками, томами и сетями.
+Панель позволяет работать как с локально установленным докером, так и с удалёнными серверами.
+
+## Запуск
+
+Выполнить [установку](https://docs.portainer.io/start/install/server) можно в отдельно установленный хост (standalone) Docker, а также в кластеры Docker Swarm и Kubernetes. Рассмотрим пример установки в варианте standalone в операционной системе Ubuntu 24.04.
+
+Для удобства воспользуемся запуском через `docker compose`
+
+```yaml:docker-compose.yml
+version: '3'
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+
+volumes:
+  portainer_data:
+```
+Запускаем контейнер командой `docker compose up -d`. После запуска перходим на `http://localhost:9000`
+
+При первом входе необходимо создать пользователя и задать ему пароль, пароль при этом должен быть не менее 12 символов.
+После входа, необходимо выбрать переменную `local`
+
+![portainer_env](/static/images/blog/portainer/portainer_env.png)
+
+После этого у вас откроется дашборд, где будет отображена информация о технических характеристиках сервера, а также — разделы с количеством сервисов, контейнеров, образов, томов и сетей:
+
+![portainer_demo](/static/images/blog/portainer/portainer_demo.gif)
+
+Здесь мы можем запускать, останавливать, создавать, удалять контейнеры, стеки, сети и тома. Так же можно просмаатривать события и запускать приложения из шаблонов.
+
+## Итог
+
+В итоге мы получаем удобную панель управления, которая позволяет значительно упростить рутинные процессы.
