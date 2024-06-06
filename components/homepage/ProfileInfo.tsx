@@ -2,7 +2,7 @@ import siteMetadata from '@/data/siteMetadata';
 import Twemoji from '@/components/Twemoji';
 import {
   IconBriefcase,
-  IconSchool,
+  //IconSchool,
   IconMapPin,
   IconBrandVk,
   IconBrandGithub,
