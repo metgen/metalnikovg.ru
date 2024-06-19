@@ -1,4 +1,4 @@
-import { Outfit } from '@next/font/google';
+import { Open_Sans, Outfit } from '@next/font/google';
 
 import SectionContainer from './SectionContainer';
 import Footer from './Footer';
@@ -9,7 +9,7 @@ interface Props {
   children: ReactNode;
 }
 
-const inter = Outfit({
+const inter = Open_Sans({
   subsets: ['latin'],
 });
 
