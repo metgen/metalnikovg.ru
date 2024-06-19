@@ -9,7 +9,7 @@ const siteMetadata = {
   description: 'Записи по IT тематике',
   language: 'ru-ru',
   theme: 'system',
-  siteUrl: 'https://metalnikovg.ru',
+  siteUrl: 'https://www.metalnikovg.ru',
   analyticsURL: 'https://cloud.umami.is/share/Ah7bGmJVDqtCROFG/www.metalnikovg.ru',
   siteRepo: 'https://github.com/metgen/metalnikovg.ru',
   siteLogo: '/static/images/avatar.jpg',
