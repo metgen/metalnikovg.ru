@@ -1,8 +1,8 @@
-import { BrandIconType } from '@/components/BrandIcon';
+import { TagIconType } from '@/components/TagIcon';
 
 type PopularTag = {
   href: string;
-  iconType: BrandIconType;
+  iconType: TagIconType;
   slug: string;
   title: string;
 };

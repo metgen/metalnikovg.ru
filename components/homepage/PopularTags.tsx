@@ -3,7 +3,7 @@ import { map } from 'lodash';
 import popularTags from '@/data/popularTags';
 import Link from '@/components/Link';
 
-import BrandIcon from '../BrandIcon';
+import TagIcon from '../TagIcon';
 
 const PopularTags = () => {
   return (
@@ -23,7 +23,7 @@ const PopularTags = () => {
 
           return (
             <Link key={slug} href={href} className={className}>
-              <BrandIcon type={iconType} className="h-6 w-6" />
+              <TagIcon type={iconType} className="h-6 w-6" />
               <div className="my-auto text-white">{title}</div>
             </Link>
           );
