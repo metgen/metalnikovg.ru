@@ -30,10 +30,10 @@ const SpotifyNowPlaying = () => {
             </a>
           </>
         ) : (
-          <p className="font-medium dark:text-gray-200">Not Playing</p>
+          <p className="font-medium text-gray-200">Not Playing</p>
         )}
-        <span className="mx-2 dark:text-gray-300">{' – '}</span>
-        <p className="max-w-max truncate dark:text-gray-300">{artist || 'Spotify'}</p>
+        <span className="mx-2 text-gray-300">{' – '}</span>
+        <p className="max-w-max truncate text-gray-300">{artist || 'Spotify'}</p>
       </div>
     </div>
   );
