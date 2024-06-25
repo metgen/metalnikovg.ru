@@ -1,0 +1,136 @@
+---
+title: 'Homarr - дашборд для вашей домашней лаборатории'
+date: '2024-06-25'
+lastmod: '2024-06-25'
+tags: ['homelab', 'homarr', 'docker', 'dashboard']
+summary: 'Простая, но мощная панель управления для вашего домашнего сервера'
+layout: PostSimple
+---
+import Twemoji from './components/Twemoji';
+
+
+Homarr — это проект с открытым исходным кодом, написанный на языке TypeScript.
+
+Ссылки на проект: [homarr.dev](https://homarr.dev), [GitHub](https://github.com/ajnart/homarr)
+
+Если вы используете домашний сервер с большим количеством приложений и сервисов, чтоб не запутаться в ip адресах и портах, необходимо использовать какую-нибудь панель управления для их учета и быстрого доступа к ним.
+Существует большое количество таких панелей, самые популярные из них: [Heimdall](https://github.com/linuxserver/Heimdall), [Homer](https://github.com/bastienwirtz/homer), [Dashy](https://github.com/Lissy93/dashy)
+
+Я остановил свой выбор на Hommar, она имеет минималистичный внешний вид, при этом обладает большим количеством функций, настроек и вариантами кастомизации. Интегрируется с торрент клиентом qBittorrent, DNS серверами AdGuardHome и PiHole, гипервизором Proxmox, системой умного дома Home Assistant и другими сервисами.
+
+Системные требования:
+
+- ОЗУ: 500 МБ и более
+- Диск: Не менее 600 МБ свободного дискового пространства для образа Docker.
+- Процессор: 1 или 2 ядерный процессор
+- Архитектуры: AMD64, ARM/v7, arm64
+
+Возможности:
+
+- Простой и удобный web интерфейс
+- Интуитивно понятные настройки
+- Виджеты и интеграции с приложениями
+- Система аутентификации
+- Поддерживается 26 языков
+- Понятную [документацию](https://homarr.dev/docs/getting-started)
+
+![homarr](/static/images/blog/homarr/homarr.png)
+
+## Установка Homarr
+
+Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
+
+- OS: Ubuntu 24.04
+- CPU: 2
+- RAM: 2 Gb
+- Disk: 30 Gb
+
+Обновляем пакеты
+
+```bash
+apt update && apt upgrade -y
+```
+Устанавливаем docker
+
+```bash
+curl -sSL https://get.docker.com | sh
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+sudo apt install docker-compose
+sudo systemctl enable docker
+sudo reboot
+```
+### Настройка docker-compose.yaml
+
+Создаем файл docker-compose для запуска Homarr сошласно официальной документации
+
+```yaml:docker-compose.yml
+version: '3'
+services:
+  homarr:
+    container_name: homarr
+    image: ghcr.io/ajnart/homarr:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
+      - ./homarr/configs:/app/data/configs
+      - ./homarr/icons:/app/public/icons
+      - ./homarr/data:/data
+    ports:
+      - '7575:7575'
+```
+Запускаем Homarr
+
+```bash
+docker compose up -d
+```
+## Первоначальная настройка
+
+После запуска контейнера, подключаемся к панели управления
+
+`http://YOUR-IP:7575/`
+
+![homarr_welcome](/static/images/blog/homarr/homarr_welcome.png)
+
+Нажимаем кнопку "Start update process":
+
+![homarr_auth](/static/images/blog/homarr/homarr_auth.png)
+
+Создаем логин и пароль и нажимаем "Continue"
+
+Настройка завершена. Теперь можно перейти в дашборд, документацию либо в его настройки. Переходим в дашборд нажимав на кнопку "Go to your board":
+
+После этого откроется панель управления с базовым шаблоном
+
+![homarr_oobe](/static/images/blog/homarr/homarr_oobe.png)
+
+При нажатии на иконку пользователя, мы сможем:
+
+- Сменить тему на темную/светлую
+- Перейти в пользовательские настройки. Там можно сменить язык на русский.
+- Перейти в управление панелью
+- Выйти из учетной записи
+
+Нажав на шестеренку, мы сможем перейти в настройки homarr
+
+Кнопка карандаша позволяет войти в режим редактирования дашборда, а затем выйти из него. После внесенных изменений не забудьте из него выйти, в противном случае изменения не будут сохранены!
+
+![homarr_add](/static/images/blog/homarr/homarr_add.png)
+
+Нажав кнопку с плюсиком в режиме редактирования можно добавить виджет, приложение или категорию
+
+![homarr_app](/static/images/blog/homarr/homarr_app.png)
+
+При добавлении приложения может задать его адрес как внешний так и локальный, выбрать иконку и настроить интеграцмю
+
+![homarr_widget](/static/images/blog/homarr/homarr_widget.png)
+
+Здесь может выбрать нужный нам виджет
+
+![homarr_setting](/static/images/blog/homarr/homarr_setting.png)
+
+Можно кастомизировать панель изменив ее лого в панели навигации, favicon, а так же фоновый рисунок для этого просто можно указать ссылки на внешние источники изображений
+
+## Итог
+
+В итоге получаем красивый и функциональный дашборд для удобного доступа к вашим приложениям и сервисам.
