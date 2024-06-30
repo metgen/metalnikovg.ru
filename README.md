@@ -15,7 +15,7 @@
 
 ## Вебсайт
 
-<a href="https://metalnikovg-ru.vercel.appp"><img src="https://raw.githubusercontent.com/metgen/metalnikovg.ru/main/public/static/images/projects/personal_blog.png" alt="Image Karhdo's Blog Website" /></a>
+<a href="https://metalnikovg-ru.vercel.app"><img src="https://raw.githubusercontent.com/metgen/metalnikovg.ru/main/public/static/images/projects/personal_blog.png" alt="Image Karhdo's Blog Website" /></a>
 
 ## Технический стек
 
