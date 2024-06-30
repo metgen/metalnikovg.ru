@@ -1,0 +1,170 @@
+---
+title: 'Adguard Home - DNS сервер для дома'
+date: '2024-06-30'
+lastmod: '2024-06-30'
+tags: ['docker', 'homelab', 'networks', 'dns']
+summary: 'Простая установка и настройка домашнего DNS сервера с блокировкой рекламы'
+layout: PostSimple
+---
+
+Adguard Home DNS - проект с открытым исходным кодом, может использоваться как DNS, DHCP сервер, умеет блокировать часть рекламного контента при помощи блокировки DNS запросов, можно устанавливать и настраивать различные фильтры. В этой статье расскажу про установку AGH с использованием docker-compose и настройку домашнего DNS сервера с блокировкой рекламы. Можно использовать на виртуальной машине, отдельном сервере или на одноплатнике типа Rasberry Pi.
+
+## Установка Adguard Home
+
+Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
+
+- OS: Ubuntu 24.04
+- CPU: 2
+- RAM: 2 Gb
+- Disk: 30 Gb
+- Обновляем пакеты
+
+```bash
+apt update && apt upgrade -y
+```
+
+Устанавливаем docker
+
+```bash
+curl -sSL https://get.docker.com | sh
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+sudo apt install docker-compose
+sudo systemctl enable docker
+sudo reboot
+```
+
+Настройка docker-compose.yaml
+
+На официальной странице Adguard Home на [docker-hub](https://hub.docker.com/r/adguard/adguardhome) приведен пример кода с docker run, но в целях удобства будем использовать docker-compose файл для запуска контейнера. 
+
+```yaml:docker-compose.yml
+version: "3.8"
+services:
+  adguardhome:
+    image: 'adguard/adguardhome:latest'
+    container_name: 'adguard'
+    hostname: 'adguard'
+    restart: 'unless-stopped'
+    volumes:
+      - '/etc/localtime:/etc/localtime:ro'
+      - './work:/opt/adguardhome/work'
+      - './config:/opt/adguardhome/conf'
+    ports:
+      # Plain DNS
+      - '53:53/tcp'
+      - '53:53/udp'
+      # AdGuard Home Admin Panel as well as DNS-over-HTTPS
+      - '5000:5000/tcp' # Admin panel
+      # - '443:443/tcp' # DOH
+      # - '443:443/udp' # DOH
+      - '3000:3000/tcp' # Setup page
+      # DNS-over-TLS
+      - '853:853/tcp'
+      # DNS-over-QUIC
+      # - '784:784/udp' # DNS-over-QUIC
+      # - '853:853/udp' # DNS-over-QUIC
+      # - '8853:8853/udp' # DNS-over-QUIC
+      # DNSCrypt
+      # - '5443:5443/tcp' # DNSCrypt
+      # - '5443:5443/udp' # DNSCrypt
+```
+
+Описание используемых портов:
+
+- `-p 53:53/tcp -p 53:53/udp` - для работы DNS сервера.
+- `-p 67:67/udp -p 68:68/tcp -p 68:68/udp` - для работы DHCP сервера
+- `-p 80:80/tcp -p 443:443/tcp -p 443:443/udp -p 3000:3000/tcp` - для доступа к Web панели и работы в режиме HTTPS/DNS-over-HTTPS
+- `-p 853:853/tcp` - для работы в режиме DNS-over-TLS
+- `-p 784:784/udp -p 853:853/udp -p 8853:8853/udp` - для DNS-over-QUIC
+- `-p 5443:5443/tcp -p 5443:5443/udp` - для DNSCrypt
+
+Так как я не планирую использовать Adguard Home в качестве DHCP сервера, DOH, DNSoQUIC, DNSCrypt отключил проброс не нужных портов задокументировав соответсвующие строки. Для первоначальной настройки используется порт `3000`, после завершения первоначальной настройки его можно отключить. Порт `5000` здесь используется для доступа к веб интерфейсу, по умолчанию используется порт `80` его всегда можно изменить по своему желанию.
+
+При попытке поднять данный контейнер, возникает следующая ошибка
+
+> Error starting userland proxy: listen tcp4 0.0.0.0:53: bind: address already in use
+
+Эта ошибка свидетельствует о том что 53 порт уже используется системой, посмотрим кто его занял
+
+```bash
+sudo lsof -i :53
+```
+![agh_check_p53](/static/images/blog/agh/agh_check_p53.png)
+
+Видим, что 53 порт занят systemd-resolve
+
+Редактирем файл resolved.conf
+
+```bash
+sudo nano /etc/systemd/resolved.conf
+```
+
+![agh_resolved_conf](/static/images/blog/agh/agh_resolved_conf.png)
+
+```
+[Resolve]
+DNS=127.0.0.1
+DNSStubListener=no
+```
+
+Сохраняем файл Ctrl+S, Ctrl+X и перезапускаем службу
+
+```bash
+systemctl restart systemd-resolved.service
+```
+
+Теперь можно запускать docker-compose
+
+```bash
+docker compose up -d
+```
+
+## Настройка AdGuard Home
+
+После запуска контейнера, открываем Web интерфейс по адресу `http://YOUR-IP:3000`и продолжаем настройку
+
+![agh_start](/static/images/blog/agh/agh_start.png)
+
+Меняем порт веб интерфейса на `5000`, затем нам предложат установить логин и пароль, далее будет показана инструкция по настройке, жмем готово. После завершения настройки нас перекидывает на основную панель.
+
+![agh_setup](/static/images/blog/agh/agh_setup.png)
+
+### Черные списки DNS
+
+Переходим к настройке черных списков DNS
+
+![agh_black_list](/static/images/blog/agh/agh_black_list.png)
+
+Переходим в Фильтры -> Черные списки DNS и добавляем нужные нам списки
+
+Я использую списки от schakal:
+
+- `https://schakal.ru/hosts/alive_hosts_ru_com.txt`
+
+- `https://schakal.ru/hosts/hosts_mail_fb.txt`
+
+
+Больше списков можно найти на [4PDA](https://4pda.to/forum/index.php?showtopic=275091&st=8000#entry89665467)
+
+Тепрь указываем адрес нашего DNS сервера как основного в настройки маршрутизатора, убеждаемся что все клиенты получили по DHCP новый адрес DNS сервера и проверяем его в деле. Для проверки используем сервис [checkadblock.ru](https://checkadblock.ru)
+
+![checkadblock](/static/images/blog/agh/checkadblock.png)
+
+Как видим по итогам тестирования набираем 72 балла из 100. К сожалению блокировка рекламы средствами DNS не саммый эффективный метод, добиться 100% результата им невозможно, но хотя бы можем избавиться от части рекламы.
+
+![adh](/static/images/blog/agh/agh.png)
+
+Спустя некоторое время у вас появится статистика, в ней вы можете увидеть все DNS запросы, запросы от конкретного клиента и болокируемые запросы. Если у вас дома есть Яндекс Станция вы сразу увидите огромное количество запросов на сервера Яндеса, но Adguard Home их блокирует.
+
+### Дополнительные настройки
+
+Так же можно тонко настраивать клиентов и распределять их по группам с разными правилами, ручные записи DNS, белые списки, блокировать контент 18+ и т.д.
+
+При обнаружении в журнвле, что какой-то нужный вам ресурс попал в черный список вы можете его разблокировать нажава на три точки напротив запроса, либо перейдя в `Пользовательские правила фильтрации`
+
+![agh_user_rules](/static/images/blog/agh/agh_user_rules.png)
+
+## Итоги
+
+В итоге мы получаем по моему мнению лучший DNS сервер для дома, с предоставлением статистики, возможностью блокировки рекламы и большим количеством дополнительных настроек.
