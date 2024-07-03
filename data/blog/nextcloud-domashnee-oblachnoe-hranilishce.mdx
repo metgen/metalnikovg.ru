@@ -1,0 +1,286 @@
+---
+title: 'Nextcloud - домашнее облачное хранилище'
+date: '2024-07-03'
+lastmod: '2024-07-03'
+tags: ['docker', 'nextcloud', 'homelab']
+summary: 'Установка Nextcloud на домашний сервер при помощи docker-compose'
+layout: PostSimple
+---
+
+
+**Nextcloud** — это бесплатный облачный сервис с открытым исходным кодом, позволяющий хранить, синхронизировать и обмениваться файлами и документами. Сервис обеспечивает безопасный доступ к данным из любого места и с любого устройства, используя шифрование на уровне передачи и хранения данных и является хорошей альтернативой как различным платным сервисам, так и ownCloud.
+
+Nextcloud предоставляет множество функций, таких как календарь, контакты, задачи, заметки, чат и многое другое, а также поддерживает различные технологии (WebDAV, TOTP, WebAuthn, Oauth2, OpenID Connect, 2FА). Управление приложениями и стабильность их работы может отличаться, как и их стоимость. Впрочем, большинство приложений бесплатны. Приложения можно легко устанавливать и настраивать в зависимости от потребностей пользователя.
+
+Nextcloud обеспечивает возможность интеграции с другими сервисами, такими как Google Drive, Dropbox и Amazon S3. Это позволяет пользователям обмениваться файлами между различными облачными хранилищами. Nextcloud также позволяет управлять правами доступа к файлам и папкам, что обеспечивает безопасность и конфиденциальность данных. Пользователи могут устанавливать права доступа на уровне групп и отдельных пользователей, а также управлять доступом к файлам через ссылки.
+
+## Установка NextCloud
+
+Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
+
+- OS: Ubuntu 24.04
+- CPU: 2
+- RAM: 2 Gb
+- Disk: 30 Gb
+
+**Обновляем пакеты**
+
+```bash
+apt update && apt upgrade -y
+```
+
+**Устанавливаем docker**
+
+```bash
+curl -sSL https://get.docker.com | sh
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+sudo apt install docker-compose
+sudo systemctl enable docker
+sudo reboot
+```
+
+**Настройка docker-compose.yaml**
+
+Создаем файл docker-compose со следующим содержимым 
+
+```yaml:docker-compose.yml
+version: '3'
+
+services:
+  nextcloud:
+    image: nextcloud
+    container_name: nextcloud
+    restart: unless-stopped
+    networks:
+      - cloud
+    depends_on:
+      - nextclouddb
+      - redis
+    ports:
+      - 8088:80
+    volumes:
+      - ./html:/var/www/html
+      - ./custom_apps:/var/www/html/custom_apps
+      - ./config:/var/www/html/config
+      - ./data:/var/www/html/data
+      - /mnt/hdd/shared_folder:/var/smb_shares
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Moscow
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=dbpassword
+      - MYSQL_HOST=nextclouddb
+      - REDIS_HOST=redis
+
+  nextclouddb:
+    image: mariadb
+    container_name: nextcloud-db
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    networks:
+      - cloud
+    volumes:
+      - ./nextclouddb:/var/lib/mysql
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Moscow
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_PASSWORD=dbpassword
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - ./redis:/data
+    networks:
+      - cloud
+
+networks:
+  cloud:
+    name: cloud
+    driver: bridge
+```
+**Описание используемых контейнеров**
+
+Этот файл Docker Compose развернет 3 контейнера:
+- Nextcloud
+- База данных MySQL, необходимая для Nextcloud
+- Redis — кэширование памяти. Если вы собираетесь использовать NextCloud для важных файлов, настоятельно рекомендуется настроить Redis.
+
+Так же для публикации NextCloud в интернет для доступа к файлам за пределами локальной сети я буду использовать NginxProxyManager и Cloudflare, как это настроить я рассказывал в этом [посте](/blog/publikaciya-lokalnogo-servera-iz-doma-v-interenet)
+
+## Небольшое пояснение того, что делает каждая строка
+
+### Nextcloud
+
+```bash
+nextcloud:
+    image: nextcloud # Используем официальный docker образ nextcloud
+    container_name: nextcloud # Просто имя контейнера которое поможет вам его идентифицировать 
+    restart: unless-stopped # Если произойдет остановка контейнера, то он снова перезапустится
+    networks:
+      - cloud
+    depends_on: #Ожидание запуска контейнеров баз данных, перед запуском nextcloud
+      - nextclouddb
+      - redis
+    ports: # Если на вашем сервере имеется несколько веб-сервисов, вам необходимо изменить порт. Я направляю nextcloud с порта 80 на порт 8088
+      - 8088:80
+    volumes: # Это важно. сопоставляем каталог файлов внутри контейнера с каталогом на вашем реальном компьютере
+      - ./html:/var/www/html # Сопоставьте каталог /var/www/html в контейнере с папкой html в той же папке, что и docker-compose.yml
+      - ./custom_apps:/var/www/html/custom_apps # Эти тома позволяют нам легко взаимодействовать с файлами в контейнере 
+      - ./config:/var/www/html/config
+      - ./data:/var/www/html/data
+      - /mnt/hdd/shared_folder:/var/smb_shares # Подключаем примонтированный диск в /mnt/hdd/shared_folder
+    environment:
+      - PUID=1000 # Идентификаторы пользователей. Скорее всего, оба значения должны быть 1000. Неправильная установка этих значений приведет к проблемам с правами доступа к файлам
+      - PGID=1000
+      - TZ=Europe/Moscow # Установите свой часовой пояс
+      - MYSQL_DATABASE=nextcloud # Это информация о базе данных, которую мы настроим в следующем разделе
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=dbpassword
+      - MYSQL_HOST=nextclouddb
+      - REDIS_HOST=redis # Использование контейнера Redis
+```
+
+### База данных Nextcloud
+
+```bash
+nextclouddb:
+    image: mariadb # Официальный образ mariadb 
+    container_name: nextcloud-db
+    restart: unless-stopped
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW # Честно говоря, не знаю для чего это, если вы знаете, пишите в комментариях
+    networks:
+      - cloud
+    volumes:
+      - ./nextclouddb:/var/lib/mysql
+    environment:
+      - PUID=1000 # Должно быть то же самое, что и у других контейнеров 
+      - PGID=1000
+      - TZ=Europe/Moscow
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_PASSWORD=dbpassword # Та же информация, что была введена в разделе nextcloud 
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+```
+
+**Запускаем контейнер**
+
+```bash
+docker compose up -d
+```
+После запуска контейнера, открываем Web интерфейс по адресу `http://YOUR-IP:8088` и задаем имя пользователя и пароль администратора. После входа, мы попадем на главную страницу NextCloud, здесь мы можем настроить добавить и настроить виджеты.
+
+![nextcloud_welcome_page](/static/images/blog/nc/nc_wp.png)
+
+Для перехода к файлам, нажимаем соответсвующую иконку в левом верхнем углу
+
+![nextcloud_files](/static/images/blog/nc/nc_fs.png)
+
+Нажав на иконку пользователя в правом верхнем углу можно перейти в настройки NextCloud, а также добавить необходимые приложения. 
+
+## Подключение внешнего хранилща
+
+Для подключения внешних источников данных, необхлдимо активировать приложение `External storage support`. Найти его можно в разделе ваши приложения и просто нажать кнопку включить. Далее переходим в `Параметры сервера` -> `Внешнее хранилище`. Я буду использовать в качестве внешнего хранилища примонтированный жесткий диск. Для его подключения, из выпадающего списка выбираем тип хранилища `Локально`, задаем имя папки, напрмер `HDD`, а в поле конфигурация задем путь `/var/smb_shares` котрыей мы ранее определиили в нашем docker-compose файле, в разделе `volumes`.
+
+![nextcloud_ext_stor](/static/images/blog/nc/nc_es.png)
+
+После этого перейдя в Файлы, вы увидите папку `HDD`. Перейдите в нее чтоб убедиться, что все ваши файлы доступны.
+
+## Публикация сервиса в интернет
+
+Перым делом для публикации NextCloud в сеть необходимо создать соответствующую dns-запись в вашем домене и добавить host в `Nginx Proxy Manager`, как это сделать можно прочитать [здесь](/blog/publikaciya-lokalnogo-servera-iz-doma-v-interenet).
+
+Для удаленного доступа к вашим календарям и контактам на вкладке `Custom Locations` добавим следющие локации:
+
+```
+Location 1:
+
+location = /.well-known/caldav
+scheme = html
+Forward Hostname = <local IP>/ remote.php/dav
+Forward Port 80
+```
+```
+Location 2:
+
+location = /.well-known/carddav
+scheme = html
+Forward Hostname = <local IP>/ remote.php/dav
+Forward Port 80
+```
+
+Но даже если вы все сделали правильно, перейдя по адресу вашего домена вы получите ошибку `Доступ через недоверенный домен`. Чтоб исправить эту ошибку нам необходимо отредактировать файл `config.php` и изменить доверенные домены на ваш домен.
+Если вы хотите получать доступ к Nextcloud из своей локальной сети, может быть полезно добавить локальный IP-адрес Nextcloud.
+
+Останавливаем контейнер
+
+```bash
+docker compose down
+```
+
+Редактируем файл config.php
+
+```bash
+sudo nano ~/nextcloud/config/config.php
+```
+
+Необходимо добавить следующие строки:
+
+```
+'trusted_domains' => 
+ array (
+ 0 => 'nextcloud.example.com',
+ 1 => '192.168.78.100:8080',
+ ),
+ 'overwritehost' => 'nextcloud.example.com',
+ 'overwriteprotocol' => 'https',
+ ```
+
+Поскольку мы используем Niginx Proxy Manager, в файл config.php необходимо добавить следующее:
+
+```
+ 'default_phone_region' => 'US' , 
+ 'trustedproxies' => 
+ массив ( 
+ 0 => 'NginxProxyManager' , 
+ 1 => '192.168.78.110' , 
+),
+```
+Во избежании некоторых предупреждений не рекомендуется менять строку `'default_phone_region' => 'US'`
+
+Для настройки почтовых оповещений вам необходимо добавить следующие строки в файл конфигурации. Значения необходимо получить у вашего провайдера электронной почты.
+
+```
+ 'mail_from_address' => 'user', # insert your emails user
+ 'mail_smtpmode' => 'smtp',
+ 'mail_sendmailmode' => 'smtp',
+ 'mail_domain' => 'example.com', # Your email domain
+ 'mail_smtphost' => 'smtp.example.com', 
+ 'mail_smtpport' => '465',
+ 'mail_smtpauth' => 1,
+ 'mail_smtpsecure' => 'ssl',
+ 'mail_smtpname' => 'user@example.com',
+ 'mail_smtppassword' => 'secretpassword',
+```
+По итогу должно получиться примерно так
+
+![nextcloud_config](/static/images/blog/nc/nc_config.png)
+
+После сохранения файла, снова запускаем контейнер, переходим по заданному адресу и убеждаемся что теперь все работает.
+
+## Потенциальные проблемы
+
+> Если вы столкнулись с ошибкой шлюза 502, попробуйте удалить файлы cookie в браузере для домена, на котором размещен ваш сервер.
+
+> Обязательно регулярно обновляйте образы Docker. Nextcloud в Docker не может пропускать целые версии. Например, если у вас версия 24, а самая новая версия — 26, НЕ обновляйтесь сразу до 26, сначала обновите до 25. Поэтому регулярно запускайте `docker compose pull`.
+
+## Итог
+
+В итоге мы получаем собственное облако с широким функционалом, а так же доступ к локальным файлам за переделами локальной сети.
