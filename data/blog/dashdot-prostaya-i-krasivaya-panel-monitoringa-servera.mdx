@@ -1,0 +1,72 @@
+---
+title: 'Dash. - простая и красивая панель мониторинга сервера'
+date: '2024-07-10'
+lastmod: '2024-07-10'
+tags: ['homelab', 'docker', 'monitoring']
+summary: 'Мониторинг сервера с помощью панели dash. (dashdot)'
+layout: PostSimple
+---
+
+[dash.](https://getdashdot.com) — это современная серверная панель мониторинга, работающая на новейших технологиях, разработанная с учетом глассморфизма. Она предназначена для использования на небольших VPS и частных серверах.
+
+Если вам нужен простой и красивый мониторинг сервера, воспользуйтесь dashdot. Он имеет современный веб интервейс, и не требует дополнительных настроек. С помощью него можно мониторить:
+- Загрузку процессора
+- Утилизацию оперативной памяти
+- Количество занятого и свободного места на дисках
+- Использование сети
+
+# Установка dash.
+
+Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
+
+- OS: Ubuntu 24.04
+- CPU: 2
+- RAM: 2 Gb
+- Disk: 30 Gb
+
+Обновляем пакеты
+
+```bash
+apt update && apt upgrade -y
+```
+
+Устанавливаем docker
+
+```bash
+curl -sSL https://get.docker.com | sh
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+sudo apt install docker-compose
+sudo systemctl enable docker
+sudo reboot
+```
+
+Настройка docker-compose.yaml
+
+Воспользуемся официальной [документацией](https://getdashdot.com/docs/installation/docker-compose)
+
+```yaml:docker-compose.yml
+version: '3.5'
+
+services:
+  dash:
+    image: mauricenino/dashdot:latest
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - '80:3001'
+    volumes:
+      - /:/mnt/host:ro
+```
+Сохраняем файл и запускаем контейнер
+
+```bash
+docker compose up -d
+```
+После запуска контейнера, открываем Web интерфейс по адресу `http://YOUR-IP:3001`
+
+![dashdot](/static/images/blog/dashdot/dashdot.png)
+
+## Итог
+
+Мы получили простую, красивую и современную панель мониторинга.
