@@ -24,7 +24,6 @@ const TypedBios = () => {
         <li>
           Меня зовут <b className="font-medium">Геннадий</b>
         </li>
-        <li>Я работаю специалистом технической поддержки</li>
         <li>
           В свободное время изучаю различные IT технологии <Twemoji emoji="desktop computer" />
         </li>

@@ -18,12 +18,7 @@ const ProfileCardInfo = () => {
       <div className="mb-2 mt-2 space-y-3">
         <div className="flex items-center">
           <IconBriefcase size={20} strokeWidth={2} />
-          <p className="px-2">
-            Technical Support @{' '}
-            <a className="hover:underline" target="_blank" href="https://ozon.tech/" rel="noreferrer">
-              OzonTech
-            </a>
-          </p>
+          <p className="px-2">Специалист тех. поддержки</p>
         </div>
         {/* <div className="flex items-center">
           <IconSchool name="study" size={20} strokeWidth={2} />
