@@ -1,0 +1,116 @@
+---
+title: 'Мониторинг Proxmox с помощью Grafana'
+date: '2024-08-28'
+lastmod: '2024-08-28'
+tags: ['homelab', 'proxmox', 'prometheus', 'grafana', 'monitoring']
+summary: 'Мониторинг Proxmox с помощью Grafana, Prometheus и PVE-exporter'
+layout: PostSimple
+---
+
+Proxmox сам по себе имеет очень хороший интерфейс для мониторинга всех видов ресурсов, таких как виртуальные машины, контейнеры и хранилища. Поскольку я уже использую prometheus и grafana для 
+[мониторинга домашней сети](/blog/monitoring-routera-mikrotik-pri-pomoshchi-prometheus-i-grafana), я решил использовать его и для PVE. При желении можно использовать тот-же самый docker-контейнер. Давайте сразу перейдем к установке.
+
+## Настройки Proxmox VE
+
+На хосте Proxmox создадим группу и пользователя для мониторинга и назначим соответствующую роль
+
+```bash
+pveum groupadd monitoring -comment 'Monitoring group'
+pveum aclmod / -group monitoring -role PVEAuditor
+pveum useradd pve_exporter@pve
+pveum usermod pve_exporter@pve -group monitoring
+pveum passwd pve_exporter@pve
+```
+
+## Устанавливаем PVE-exporter
+
+```bash
+apt update
+apt install python3-pip
+pip3 install prometheus-pve-exporter
+```
+
+![pve_exp_error](/static/images/blog/proxmox_monitoring/pve_exp_error.png)
+
+При установке PVE-exporter может возникнут ошибку `Externally Managed Environment` для ее устранения используйте команду ниже
+
+```bash
+sudo rm -rf /usr/lib/python3.11/EXTERNALLY-MANAGED
+```
+
+Создаем файл настроек для PVE-exporter
+
+```bash
+mkdir -p /etc/prometheus/
+cat > /etc/prometheus/pve.yml << EOF
+default:
+    user: pve_exporter@pve
+    password: pve_exporter_user_password
+    verify_ssl: false
+EOF
+```
+
+## Создайте файл конфигурации systemd
+
+Далее нам необходимо создать файл конфигурации systemd для управления proxmox-pve-exporter. В строке `User` указываем пользователя которого вы используете для входа в консоль proxmox, в моем случае это `root`
+
+```bash
+tee /etc/systemd/system/prometheus-pve-exporter.service<<EOF
+[Unit]
+Description=Prometheus exporter for Proxmox VE
+Documentation=https://github.com/znerol/prometheus-pve-exporter
+
+[Service]
+Restart=always
+User=root
+ExecStart=/usr/local/bin/pve_exporter --config.file /etc/prometheus/pve.yml
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+Включите службу, выполнив следующие команды.
+
+```bash
+systemctl daemon-reload
+systemctl start prometheus-pve-exporter
+systemctl enable prometheus-pve-exporter
+```
+
+Проверяем запустился ли proxmox-pve-exporter:
+
+```bash
+systemctl status prometheus-pve-exporter
+```
+
+## Настройки Prometheus
+
+В файл конфигурации Prometheus добавим
+
+```yml:prometheus.yml
+  - job_name: 'pve'
+    static_configs:
+      - targets:
+        - 192.168.88.11:9221  # Хост 1 Proxmox VE с PVE exporter
+        - 192.168.88.12:9221  # Хост 2 Proxmox VE с PVE exporter
+    metrics_path: /pve
+    params:
+      module: [default]
+```
+
+Здесь можно указать сразу несколько хостов Proxmox для мониторинга. После изменения настроек перезапускаем сервис/контейнер Prometheus.
+
+## Настройки Grafana
+
+Импортируем дашборд [№10347](https://grafana.com/grafana/dashboards/10347-proxmox-via-prometheus/) в Grafana
+
+![grafana_import](/static/images/blog/proxmox_monitoring/grafana_import.png)
+
+Наслаждаемся полученным результатом
+
+![grafana_10347](/static/images/blog/proxmox_monitoring/grafana_10347.png)
+
+## Итог
+
+С помощью Grafana, Prometheus и Proxmox PVE exporter мы получили мониторинг нашего Proxmox сервера.
