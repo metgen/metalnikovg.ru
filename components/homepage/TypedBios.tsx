@@ -22,19 +22,19 @@ const TypedBios = () => {
     <div>
       <ul id="bios" className="hidden">
         <li>
-          Меня зовут <b className="font-medium">Геннадий</b>
+          Привет! <Twemoji emoji="waving hand" /> Меня зовут <b className="font-medium">Геннадий.</b>
         </li>
         <li>
-          В свободное время изучаю различные IT технологии <Twemoji emoji="desktop computer" />
+          Я работаю в сефре IT. <Twemoji emoji="desktop computer" />
         </li>
         <li>
-          Нравится учиться и получать новые знания в данной области <Twemoji emoji="books" />
+          Мне нравится учиться и получать новые знания в этой области. <Twemoji emoji="books" />
         </li>
         <li>
-          Пишу инструкции, полезные заметки, интересные статьи <Twemoji emoji="scroll" />
+          Веду личную базу знаний в Obsidian <Twemoji emoji="gem" />
         </li>
         <li>
-          Увлекаюсь видеоиграми <Twemoji emoji="video-game" />
+          Делаю полезные заметки для себя, и публикую их здесь. <Twemoji emoji="scroll" />
         </li>
       </ul>
       <span ref={el} className="text-neutral-900 dark:text-neutral-200" />

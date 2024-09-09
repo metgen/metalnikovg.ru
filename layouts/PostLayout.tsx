@@ -82,7 +82,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                           {author.twitter && (
                             <Link
                               href={author.twitter}
-                              className="text-primary hover:text-sky-600 dark:hover:text-sky-400"
+                              className="text-primary hover:text-teal-600 dark:hover:text-teal-400"
                             >
                               {author.twitter.replace('https://twitter.com/', '@')}
                             </Link>
@@ -129,7 +129,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                         <h2 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                           Предыдущая запись
                         </h2>
-                        <div className="text-primary hover:text-sky-600 dark:hover:text-sky-400">
+                        <div className="text-primary hover:text-teal-600 dark:hover:text-teal-400">
                           <Link href={`/${prev.path}`}>{prev.title}</Link>
                         </div>
                       </div>
@@ -139,7 +139,7 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
                         <h2 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                           Следующая запись
                         </h2>
-                        <div className="text-primary hover:text-sky-600 dark:hover:text-sky-400">
+                        <div className="text-primary hover:text-teal-600 dark:hover:text-teal-400">
                           <Link href={`/${next.path}`}>{next.title}</Link>
                         </div>
                       </div>
@@ -150,10 +150,10 @@ export default function PostLayout({ content, authorDetails, next, prev, childre
               <div className="pt-4 xl:pt-8">
                 <Link
                   href={`/${basePath}`}
-                  className="text-primary hover:text-sky-600 dark:hover:text-sky-400"
+                  className="text-primary hover:text-teal-600 dark:hover:text-teal-400"
                   aria-label="Back to the blog"
                 >
-                  &larr; Вернуться к блогу
+                  &larr; Вернуться к заметкам
                 </Link>
               </div>
             </footer>

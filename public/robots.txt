@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /noindex/
+
+User-agent: *
+Allow: /
+
+Sitemap: https://www.metalnikovg.ru/sitemap.xml

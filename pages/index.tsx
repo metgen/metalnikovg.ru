@@ -19,9 +19,9 @@ import Greeting from '@/components/homepage/Greeting';
 import Heading from '@/components/homepage/Heading';
 import TypedBios from '@/components/homepage/TypedBios';
 import ShortDescription from '@/components/homepage/ShortDescription';
-import GitBook from '@/components/homepage/GitBook';
 import PopularTags from '@/components/homepage/PopularTags';
 import ProfileCard from '@/components/homepage/ProfileCard';
+import HomeLinks from '@/components/homepage/HomeLinks';
 
 const MAX_DISPLAY = 3;
 
@@ -54,10 +54,10 @@ export default function Home({ posts }: InferGetStaticPropsType<typeof getStatic
           <div className="space-y-6 md:space-y-8 md:pr-8 xl:col-span-2">
             <Greeting />
             <div className="text-base leading-7 text-gray-600 dark:text-gray-400 md:text-lg md:leading-8">
-              <Heading />
               <TypedBios />
+              <Heading />
               <ShortDescription />
-              <GitBook />
+              <HomeLinks />
             </div>
           </div>
           <div className="hidden xl:block">
@@ -72,7 +72,7 @@ export default function Home({ posts }: InferGetStaticPropsType<typeof getStatic
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
         <div className="space-y-2 py-6 md:space-y-5">
           <h1 className="text-3xl font-extrabold leading-9 tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl sm:leading-10 md:text-5xl md:leading-14">
-            Последние записи
+            Последние опубликованные
           </h1>
           <p className="!mt-2 text-lg leading-7 text-gray-500 dark:text-gray-400">{siteMetadata.description}</p>
         </div>
@@ -110,7 +110,7 @@ export default function Home({ posts }: InferGetStaticPropsType<typeof getStatic
                       <div className="text-base font-medium leading-6">
                         <Link
                           href={`/blog/${slug}`}
-                          className="text-primary hover:text-sky-600 dark:hover:text-sky-400"
+                          className="text-primary hover:text-teal-600 dark:hover:text-teal-400"
                           aria-label={`Read "${title}"`}
                         >
                           Читать дальше &rarr;
@@ -126,12 +126,8 @@ export default function Home({ posts }: InferGetStaticPropsType<typeof getStatic
       </div>
       {posts.length > MAX_DISPLAY && (
         <div className="flex justify-end text-base font-medium leading-6">
-          <Link
-            href="/blog"
-            className="text-primary hover:text-sky-600 dark:hover:text-sky-400"
-            aria-label="Все записи"
-          >
-            Все записи &rarr;
+          <Link href="/blog" className="dark:hover:teal-400 text-primary hover:text-teal-600" aria-label="Все заметки">
+            Все заметки &rarr;
           </Link>
         </div>
       )}

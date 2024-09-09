@@ -81,7 +81,7 @@ module.exports = {
         14: '3.5rem',
       },
       fontFamily: {
-        sans: ['Outfit', ...fontFamily.sans],
+        sans: ['Open_Sans', ...fontFamily.sans],
       },
       colors: {
         primary: '#008080',
@@ -98,9 +98,9 @@ module.exports = {
             a: {
               color: theme('colors.primary'),
               '&:hover': {
-                color: `${theme('colors.sky.600')} !important`,
+                color: `${theme('colors.teal.600')} !important`,
               },
-              code: { color: theme('colors.sky.400') },
+              code: { color: theme('colors.teal.400') },
             },
             h1: {
               fontWeight: '700',
@@ -166,9 +166,9 @@ module.exports = {
             a: {
               color: theme('colors.primary'),
               '&:hover': {
-                color: `${theme('colors.sky.400')} !important`,
+                color: `${theme('colors.teal.400')} !important`,
               },
-              code: { color: theme('colors.sky.400') },
+              code: { color: theme('colors.teal.400') },
             },
             h1: {
               fontWeight: '700',

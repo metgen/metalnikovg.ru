@@ -7,7 +7,7 @@ import {
   IconBrandVk,
   IconBrandGithub,
   IconBrandInstagram,
-  IconBrandGmail,
+  IconMail,
 } from '@tabler/icons-react';
 // import { Mail, Github, Twitter, Instagram } from 'lucide-react';
 
@@ -29,15 +29,15 @@ export default function AuthorLayout({ children, content }: Props) {
 
   return (
     <>
-      <PageSEO title={`О блоге - ${headerTitle} - ${title}`} description={description} />
+      <PageSEO title={`О сайте - ${headerTitle} - ${title}`} description={description} />
 
       <div className="about divide-y divide-gray-200 dark:divide-gray-700">
         <div className="space-y-2 pb-8 pt-6 md:space-y-5">
           <h1 className="text-3xl font-extrabold leading-9 tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14">
-            О блоге
+            О сайте
           </h1>
           <p className="text-base text-gray-500 dark:text-gray-400 md:text-lg md:leading-7">
-            Кратко о себе и цели моего блога
+            Коротко о себе и цели этого сайта
           </p>
         </div>
 
@@ -52,7 +52,7 @@ export default function AuthorLayout({ children, content }: Props) {
 
             <div className="mt-2 flex gap-3">
               <Link href={`mailto:${email}`}>
-                <IconBrandGmail size={24} strokeWidth={2} />
+                <IconMail size={24} strokeWidth={2} />
               </Link>
               <Link href={github} target="_blank">
                 <IconBrandGithub size={24} strokeWidth={2} />

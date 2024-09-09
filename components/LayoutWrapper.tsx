@@ -1,4 +1,4 @@
-import { Open_Sans, Outfit } from '@next/font/google';
+import { Open_Sans } from '@next/font/google';
 
 import SectionContainer from './SectionContainer';
 import Footer from './Footer';

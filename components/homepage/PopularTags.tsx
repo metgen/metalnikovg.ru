@@ -12,7 +12,7 @@ const PopularTags = () => {
         <h1 className="text-3xl font-extrabold leading-9 tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl sm:leading-10 md:text-5xl md:leading-14">
           Основные темы
         </h1>
-        <p className="!mt-2 text-lg leading-7 text-gray-500 dark:text-gray-400">Записи в блоге по тэгам</p>
+        <p className="!mt-2 text-lg leading-7 text-gray-500 dark:text-gray-400">Заметки по тэгам</p>
       </div>
 
       <div className="popular-tags grid grid-cols-3 gap-4 py-6 xl:grid-cols-6">

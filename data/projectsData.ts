@@ -4,17 +4,9 @@ const projectsData: Project[] = [
   {
     type: 'main',
     title: 'Персональный веб-сайт',
-    imgSrc: '/static/images/projects/personal_blog.png',
+    imgSrc: '/static/images/projects/digital_garden.png',
     repo: 'metalnikovg.ru',
     builtWith: ['Next.js', 'Tailwind', 'Typescript', 'Umami'],
-  },
-  {
-    type: 'main',
-    title: 'GitBook',
-    description: 'Личная база знаний',
-    imgSrc: '/static/images/projects/gitbook.png',
-    url: 'https://gitbook.metalnikovg.ru',
-    builtWith: ['GitBook', 'GitHub', 'Markdown'],
   },
   {
     type: 'main',

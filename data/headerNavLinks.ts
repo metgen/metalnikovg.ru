@@ -1,9 +1,9 @@
 const headerNavLinks = [
-  { href: '/blog', title: 'Блог' },
-  { href: 'https://gallery.metalnikovg.ru/', title: 'Галлерея' },
+  { href: '/blog', title: 'Заметки' },
   { href: '/tags', title: 'Тэги' },
+  { href: 'https://gallery.metalnikovg.ru/', title: 'Галлерея' },
   { href: '/projects', title: 'Проекты' },
-  { href: '/about', title: 'О блоге' },
+  { href: '/about', title: 'О сайте' },
   // { href: '/resume', title: 'Резюме' },
 ];
 

@@ -7,7 +7,7 @@ import {
   IconBrandVk,
   IconBrandGithub,
   IconBrandInstagram,
-  IconBrandGmail,
+  IconMail,
 } from '@tabler/icons-react';
 
 const ProfileCardInfo = () => {
@@ -36,7 +36,7 @@ const ProfileCardInfo = () => {
           </p>
         </div>
         <div className="flex items-center">
-          <IconBrandGmail size={20} strokeWidth={2} />
+          <IconMail size={20} strokeWidth={2} />
           <p className="px-2">
             <a href={`mailto:${siteMetadata.email}`}>{siteMetadata.email}</a>
           </p>

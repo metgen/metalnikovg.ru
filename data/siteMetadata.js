@@ -2,11 +2,11 @@
 /** @type {import("pliny/config").PlinyConfig } */
 
 const siteMetadata = {
-  title: 'Личный блог',
+  title: 'metalnikovg.ru',
   author: 'Метальников Геннадий',
   fullName: 'Метальников Геннадий',
-  headerTitle: 'Metalnikov Gennadiy',
-  description: 'Записи по IT тематике',
+  headerTitle: 'Цифровой сад',
+  description: 'Заметки по IT тематике',
   language: 'ru-ru',
   theme: 'system',
   siteUrl: 'https://www.metalnikovg.ru',
@@ -14,8 +14,8 @@ const siteMetadata = {
   siteRepo: 'https://github.com/metgen/metalnikovg.ru',
   siteLogo: '/static/images/avatar.jpg',
   image: '/static/images/avatar.jpg',
-  socialBanner: '/static/images/projects/personal_blog.png',
-  email: 'metalnikov.gennadiy@gmail.com',
+  socialBanner: '/static/images/projects/digital_garden.png',
+  email: 'contact@metalnikovg.ru',
   github: 'https://github.com/metgen',
   facebook: 'https://www.facebook.com/',
   twitter: 'https://twitter.com/gennadiy_m',

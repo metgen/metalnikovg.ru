@@ -93,13 +93,13 @@ export default function ListLayoutWithTags({
         <div className="hidden h-full max-h-screen min-w-[240px] max-w-[240px] flex-wrap overflow-auto rounded bg-gray-200 pt-5 shadow-md dark:bg-[#24283b] dark:shadow-gray-800/40 sm:flex">
           <div className="px-6 py-4">
             {pathname.startsWith('/blog') ? (
-              <h3 className="font-bold uppercase text-primary">Все записи</h3>
+              <h3 className="font-bold uppercase text-primary">Все заметки</h3>
             ) : (
               <Link
                 href={`/blog`}
                 className="font-bold uppercase text-gray-700 hover:text-primary dark:text-gray-300 dark:hover:text-primary"
               >
-                Все записи
+                Все заметки
               </Link>
             )}
             <ul>

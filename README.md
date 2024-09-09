@@ -1,5 +1,5 @@
-<h1 align="center">Личный блог</h1>
-<p align="center"><i>Этот блог создан из интереса к современным технологиям WEB разработки</i></p>
+<h1 align="center">Цифровой сад</h1>
+<p align="center"><i>Этот сайт создан для публикации некоторых заметок из моей личной базы знаний в Obsidian и представляют собой своего рода "Digital garden"</i></p>
 
 <div align="center">
     <a href="https://github.com/metgen/metalnikovg.ru/stargazers"><img src="https://img.shields.io/github/stars/metgen/metalnikovg.ru" alt="Stars Badge"/></a>
@@ -15,11 +15,11 @@
 
 ## Вебсайт
 
-<a href="https://metalnikovg-ru.vercel.app"><img src="https://raw.githubusercontent.com/metgen/metalnikovg.ru/main/public/static/images/projects/personal_blog.png" alt="Image Karhdo's Blog Website" /></a>
+<a href="https://metalnikovg-ru.vercel.app"><img src="https://raw.githubusercontent.com/metgen/metalnikovg.ru/main/public/static/images/projects/digital_garden.png" alt="Image Karhdo's Blog Website" /></a>
 
 ## Технический стек
 
-Блог использует в качестве хостинга [Vercel](https://vercel.com/), создан с помощью [Next.js](https://nextjs.org/) , [Tailwind CSS](https://tailwindcss.com/) и шаблона [**Tailwind Nextjs Starter Blog**](https://tailwind-nextjs-starter-blog.vercel.app/).
+Сайт использует в качестве хостинга [Vercel](https://vercel.com/), создан с помощью [Next.js](https://nextjs.org/) , [Tailwind CSS](https://tailwindcss.com/) и шаблона [**Tailwind Nextjs Starter Blog**](https://tailwind-nextjs-starter-blog.vercel.app/).
 
 [![Next][Next.js]][Next-url] [![MDX][MDX]][MDX-url] [![Vercel][Vercel]][Vercel-url] [![React][React]][React-url] [![Typescript][Typescript]][Typescript-url] [![Tailwind CSS][Tailwind CSS]][Tailwind CSS-url] 
 
@@ -29,8 +29,8 @@
 
 - ⚛️ Обновление до **React 18**, **NextJS 13**
 - 👀 Внесены небольшие изменения в тему, иконки и структуру сайта.
-- 👨‍💻 Этот веб-сайт использует дизайн и код из репозитория [karhdo.dev](https://karhdo.dev/) и включает шаблон [Tailwind Nextjs Starter Blog](https://tailwind-nextjs-starter-blog.vercel.app/), версии 1.0.
-- 📥 Обновлены плагины и зависимости `mdx-bundler`, `rehype`/`remark` до последней версии.
+- 👨‍💻 Этот веб-сайт использует дизайн и код из репозитория [tailwind-nextjs-starter-blog](https://github.com/timlrx/tailwind-nextjs-starter-blog)
+  и включает шаблон tailwind-nextjs-starter-blog, версии 2.0.
 
 ## Локальное развертывание
 
@@ -69,7 +69,7 @@ yarn build
 
 ---
 
-<p align="center"><b>Copyright © 2024 - Metalnikovg.ru - Личный блог</b></p>
+<p align="center"><b>Copyright © 2024 - Metalnikovg.ru - Цифровой сад</b></p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
