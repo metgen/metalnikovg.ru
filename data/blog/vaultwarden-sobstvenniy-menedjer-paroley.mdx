@@ -4,7 +4,11 @@ date: '2024-07-31'
 lastmod: '2024-07-31'
 tags: ['docker', 'homelab', 'vaultwarden']
 summary: 'Настройка Docker-контейнера Vaultwarden'
-layout: PostSimple
+images:
+  [
+    '/static/images/blog/vw/banner.jpg',
+  ]
+authors: ['default']
 ---
 [Vaultwarden](https://github.com/dani-garcia/vaultwarden) — это легкая сторонняя альтернатива более тяжелому официальному серверу Bitwarden, написанная на Rust. Благодаря своей легкости он отлично подходит для таких устройств, как Raspberry Pi или виртуального сервера с небольшим объемом памяти.
 
@@ -48,7 +52,7 @@ sudo reboot
 
 Создаем файл docker-compose со следующим содержимым 
 
-```yaml:docker-compose.yaml
+```yaml:docker-compose.yaml {7} showLineNumbers
 services:
   vaultwarden:
     image: vaultwarden/server:latest

@@ -15,7 +15,7 @@
 
 ## Вебсайт
 
-<a href="https://metalnikovg-ru.vercel.app"><img src="https://raw.githubusercontent.com/metgen/metalnikovg.ru/main/public/static/images/projects/digital_garden.png" alt="Image Karhdo's Blog Website" /></a>
+<a href="https://metalnikovg-ru.vercel.app"><img src="https://raw.githubusercontent.com/metgen/metalnikovg.ru/main/public/static/images/projects/screen_site.png" alt="metalnikovg.ru" /></a>
 
 ## Технический стек
 
@@ -52,7 +52,7 @@ $env:PWD = $(Get-Location).Path
 yarn dev
 ```
 
-Откройте `http://localhost:3000` в браузере, чтобы увидеть результат.
+Откройте `http://localhost:3434` в браузере, чтобы увидеть результат.
 
 Теперь можете редактировать макет и содержимое, а благодаря живой перезагрузке страницы автоматически обновляются по мере их редактирования.
 

@@ -14,30 +14,23 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "verbatimModuleSyntax": true,
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/types/*": ["types/*"],
-      "@/utils/*": ["utils/*"],
-      "@/constants/*": ["constants/*"],
-      "@/components/*": ["components/*"],
-      "@/data/*": ["data/*"],
-      "@/layouts/*": ["layouts/*"],
-      "@/libs/*": ["libs/*"],
-      "@/css/*": ["css/*"],
+      "~/*": ["./*"],
       "contentlayer/generated": ["./.contentlayer/generated"]
     },
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "plugins": [{ "name": "next" }],
+    "strictNullChecks": true
   },
   "include": [
     "next-env.d.ts",
     "**/*.js",
+    "**/*.mjs",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.json",
     ".contentlayer/generated",
     ".contentlayer/generated/**/*.json",
     ".next/types/**/*.ts"

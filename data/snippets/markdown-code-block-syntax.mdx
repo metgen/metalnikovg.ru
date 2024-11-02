@@ -1,0 +1,262 @@
+---
+heading: 'Cинтаксис Markdown'
+title: "Базовый и расширенный синтаксис Markdown"
+date: '2024-10-01'
+icon: 'Markdown'
+draft: false
+summary: 'Базовый и расширенный синтаксис Markdown а так же реальные примеры'
+tags: ['markdown', 'code-block', 'syntax']
+---
+
+## Базовый синтаксис
+
+Используйте тройные обратные кавычки для создания блока кода в Markdown
+
+````
+```language
+your code goes here
+```
+````
+
+Пример
+
+````
+```yml
+- job_name: 'traefik'
+    scrape_interval: 30s
+    scheme: http
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['192.168.78.110:8082']
+```
+````
+
+будет выглядеть как:
+
+```yml
+- job_name: 'traefik'
+    scrape_interval: 30s
+    scheme: http
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['192.168.78.110:8082']
+```
+
+## Имя файла
+
+Добавить `:filename.ext`после languageдля визуализации с меткой имени файла в верхней части блока
+
+Пример:
+
+````
+```yaml:docker-compose.yml
+version: "3"
+services:
+    test:
+        image: nginx
+        ports:
+            - 80
+        volumes:
+            - ./src:/usr/share/nginx/html
+        restart: unless-stopped
+```
+````
+
+будет выглядеть как:
+
+```yaml:docker-compose.yml
+version: "3"
+services:
+    test:
+        image: nginx
+        ports:
+            - 80
+        volumes:
+            - ./src:/usr/share/nginx/html
+        restart: unless-stopped
+```
+
+## Выделение строк и нумерация строк
+
+- Добавьте  `{numbers}` свойство после, `language` чтобы выделить строку
+- Добавьте `showLineNumbers` свойство после `language` для рендеринга с номерами строк
+
+Пример:
+
+````
+```html {1,4-6,10} showLineNumbers
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Hello world</title>
+  </head>
+  <body>
+    <h1>Hello world</h1>
+  </body>
+</html>
+```
+````
+
+будет выглядеть как:
+
+```html {1,4-6,10} showLineNumbers
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Hello world</title>
+  </head>
+  <body>
+    <h1>Hello world</h1>
+  </body>
+</html>
+```
+
+## Выноски
+
+Можно использовать различные типы `[!NOTE]`, `[!WARNING]`, `[!CAUTION]`, `[!TIP]`
+
+Пример:
+
+````
+> [!NOTE]
+> NOTE
+````
+
+будет выглядеть как:
+
+> [!NOTE]
+> NOTE
+
+> [!WARNING]
+> WARNING
+
+> [!CAUTION]
+> CAUTION
+
+> [!TIP]
+> TIP
+
+## Цитирование
+
+````
+> Цитата
+````
+
+> Цитата
+
+## Внутренние и внешние ссылки
+
+
+````
+[title](https://www.example.com)
+````
+## Вставка изображений
+
+````
+![alt text](image.jpg)
+````
+
+## Заголовки
+
+```
+# H1
+## H2
+### H3
+```
+# H1
+## H2
+### H3
+
+---
+
+## Работа с текстовом
+ 
+### Жирный текст:
+
+```
+**bold text**
+```
+
+**bold text**
+
+### Текст курсивом:
+
+```
+*italicized text*
+```
+
+*italicized text*
+
+### Код:
+
+```
+`code`
+```
+
+`code`
+
+### Зачеркнуты текст
+
+```
+~~The world is flat.~~
+```
+
+~~The world is flat.~~
+
+## Таблицы
+
+```
+| Syntax | Description |
+| ----------- | ----------- |
+| Header | Title |
+| Paragraph | Text |
+```
+
+| Syntax | Description |
+| ----------- | ----------- |
+| Header | Title |
+| Paragraph | Text |
+
+## Лист задач
+
+```
+- [x] Write the press release
+- [ ] Update the website
+- [ ] Contact the media
+```
+- [x] Write the press release
+- [ ] Update the website
+- [ ] Contact the media
+
+## Списки
+
+### Упорядоченный список
+
+```
+1. First item
+2. Second item
+3. Third item
+```
+
+1. First item
+2. Second item
+3. Third item
+
+### Неупорядоченный список
+
+```
+- First item
+- Second item
+- Third item
+```
+
+- First item
+- Second item
+- Third item
+
