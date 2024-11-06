@@ -24,7 +24,7 @@ export function PostCardListView({
           href={`/blog/${slug}`}
           className={clsx([
             'relative block shrink-0',
-            'h-auto w-full md:h-80 md:w-72',
+            'md:h-75 h-auto w-full md:w-72',
             'pb-3 pl-0 pr-3 pt-0',
             'transition-all ease-in-out hover:pb-2 hover:pl-1 hover:pr-2 hover:pt-1',
           ])}
@@ -48,7 +48,7 @@ export function PostCardListView({
           <div className="space-y-4 md:space-y-6">
             <div className="space-y-3">
               <dl className="text-sm">
-                <dt className="sr-only">Published on</dt>
+                <dt className="sr-only">Опубликовано</dt>
                 <dd className="font-medium leading-6 text-gray-500 dark:text-gray-400">
                   <time dateTime={date}>{formatDate(date, SITE_METADATA.locale)}</time>
                   <span className="mx-2 text-gray-400">/</span>
