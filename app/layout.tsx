@@ -95,7 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <link rel="icon" href={`${basePath}/static/favicons/favicon.ico`} />
       <link rel="shortcut icon" href={`${basePath}/static/favicons/favicon.ico`} />
       <link rel="icon" type="image/png" sizes="96x96" href={`${basePath}/static/favicons/favicon-96x96.png`} />
-      <link rel="icon" type="image/svg+xml" sizes="16x16" href={`${basePath}/static/favicons/favicon.svg"`} />
+      <link rel="icon" type="image/svg+xml" sizes="16x16" href={`${basePath}/static/favicons/favicon.svg`} />
       <link rel="manifest" href={`${basePath}/static/favicons/site.webmanifest`} />
       <meta name="apple-mobile-web-app-title" content="metalnikovg.ru" />
       <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
