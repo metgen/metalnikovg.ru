@@ -4,12 +4,10 @@ date: '2024-07-31'
 lastmod: '2024-07-31'
 tags: ['docker', 'homelab', 'vaultwarden']
 summary: 'Настройка Docker-контейнера Vaultwarden'
-images:
-  [
-    '/static/images/blog/vw/banner.jpg',
-  ]
+images: ['/static/images/blog/vw/banner.png']
 authors: ['default']
 ---
+
 [Vaultwarden](https://github.com/dani-garcia/vaultwarden) — это легкая сторонняя альтернатива более тяжелому официальному серверу Bitwarden, написанная на Rust. Благодаря своей легкости он отлично подходит для таких устройств, как Raspberry Pi или виртуального сервера с небольшим объемом памяти.
 
 Bitwarden — это менеджер паролей с открытым исходным кодом, который позволяет вам размещать пароли самостоятельно, а не полагаться на облачные серверы.
@@ -50,7 +48,7 @@ sudo reboot
 
 **Настройка docker-compose.yaml**
 
-Создаем файл docker-compose со следующим содержимым 
+Создаем файл docker-compose со следующим содержимым
 
 ```yaml:docker-compose.yaml {7} showLineNumbers
 services:
@@ -104,7 +102,7 @@ docker compose down
 Открываем docker-compose.yaml и добавляем следующую строку в раздел environment:
 
 ```yaml
-      - SIGNUPS_ALLOWED=false
+- SIGNUPS_ALLOWED=false
 ```
 
 После этого снова запускаем контейнер
@@ -117,11 +115,12 @@ docker compose up -d
 
 ![vw_reg_error](/static/images/blog/vw/vw_reg_error.png)
 
-**Настройка клиентов
+\*\*Настройка клиентов
 
 В качестве клиента для мобильных устройств можно использовать официальное приложение Bitwarden, а для десктопных браузеров официальное расширение.
 
 При подключении клиента выберите `собственный хостинг` и укажите его полный адрес.
+
 ## Итог
 
 Мы получили собственный менеджер паролей и теперь все ваши пароли будут храниться исключительно на вашем сервере. А получить доступ к ним вы сможете из любой точки мира.
