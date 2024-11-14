@@ -1,0 +1,69 @@
+---
+title: 'Dockge - менеджер стеков Docker'
+date: '2024-11-14'
+lastmod: '2024-11-14'
+tags: ['docker', 'homelab']
+summary: 'Стильный, простой в использовании менеджер dстеков Docker'
+images: ['/static/images/blog/dockge/banner.png']
+authors: ['default']
+---
+
+Dockge — это менеджер стеков Docker, разработанный тем же человеком, который стоит за популярным инструментом мониторинга [Uptime Kuma](/blog/uptime-kuma-self-hosted-monitoring)
+
+## Возможности
+
+Dockge позволяет вам управлять несколькими файлами Docker Compose из одного, простого пользовательского интерфейса. Он похож на [Portainer](/blog/portainer-panel-upravleniya-docker) но значительно проще в использовании. Portainer предоставляет множество функций Docker, в то время как Dockge сосредоточен только на docker-compose с лучшим пользовательским интерфейсом и лучшим пользовательским опытом. Если вы хотите управлять своим контейнером только с помощью docker-compose, то Dockge определенно вам понравится, но если вам необходимо управлять чем-то вроде сетей Docker или отдельных контейнеров то лучше использовать Portainer.
+
+![dockge-main](/static/images/blog/dockge/screenshot-2024-09-12-21-44-51.png)
+
+Вы можете выполнять множество действий в интерфейсе [Dockge](https://github.com/louislam/dockge) , не касаясь командной строки. Например, вы можете легко создавать, редактировать, запускать, перезапускать и удалять файлы `compose`, а также легко обновлять свои контейнеры.
+
+![dockge-stack](/static/images/blog/dockge/screenshot-2024-09-12-21-47-14.png)
+
+Он включает в себя полностью интерактивный редактор для ваших файлов, что упрощает редактирование и избавляет от ошибок форматирования. Так же он позволяет преобразовывать команды `docker run` в `docker compose`, подключать уже имеющиеся docker сети.
+
+![dockge-compose](/static/images/blog/dockge/screenshot-2024-09-12-21-48-05.png)
+
+Вы можете подключить в качестве агентов другие экземпляры dockge развернутые на ваших хостах.
+
+При необходимости можно получить доступ к каждому из своих контейнеров через очень простой в использовании веб-терминал.
+
+## Установка Dockge
+
+Развернуть Dockge очень просто, перейдите на [официальный сайт проекта Dockge](https://dockge.kuma.pet/), в поле `Stacks Directory` укажите путь где хранятся ваши стеки а в поле `Port` порт на котором вы хотите запустить Dockge. После этого вы можете скопировать содержимое файла `docker-compose.yaml` или скачать его.
+
+Пример файла:
+
+```yaml:docker-compose.yaml {8,16,19}showLineNumbers
+version: "3.8"
+services:
+  dockge:
+    image: louislam/dockge:1
+    container_name: dockge
+    restart: unless-stopped
+    ports:
+      - 5001:5001
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+      # Stacks Directory
+      # ⚠️ READ IT CAREFULLY. If you did it wrong, your data could end up writing into a WRONG PATH.
+      # ⚠️ 1. FULL path only. No relative path (MUST)
+      # ⚠️ 2. Left Stacks Path === Right Stacks Path (MUST)
+      - /home/user:/home/user
+    environment:
+      # Tell Dockge where to find the stacks
+      - DOCKGE_STACKS_DIR=/home/user
+```
+
+Запускаем Dockge:
+
+```bash
+docker compose up -d
+```
+
+Переходим на `http://YOUR-IP:5001/`, нам сразу же предложат создать нового пользователя, задать для него логин и пароль. После этого можно приступить к использованию Dockge.
+
+## Заключение
+
+Мы получли легкий и простой в использовании инструмент управления стеками docker.
