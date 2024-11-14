@@ -20,19 +20,19 @@ export function FooterBottom() {
         showCover
       />
       <div className="flex items-center space-x-2">
-      <div className="my-2 flex space-x-2 text-sm text-gray-500 dark:text-gray-400">
+        <div className="my-2 flex space-x-2 text-sm text-gray-500 dark:text-gray-400">
           <div>{`Copyright © ${new Date().getFullYear()}`}</div>
           <span>{` • `}</span>
           <span>metalnikovg.ru</span>
         </div>
-      <span className="mx-2.5 text-gray-400">|</span>
+        <span className="mx-2.5 text-gray-400">|</span>
         <Link href="/feed.xml" aria-label="RSS Feed" data-umami-event="rss-feed" prefetch={false}>
           <Rss strokeWidth={1.5} size={20} />
         </Link>
         <Link
           href={SITE_METADATA.analytics.umamiAnalytics.shareUrl}
           aria-label="Open analytics"
-          data-umami-event="nav-analytics"
+          data-umami-event="footer-analytics"
           className="ml-2"
         >
           <AreaChart strokeWidth={1.5} size={22} />
