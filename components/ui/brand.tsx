@@ -44,6 +44,7 @@ import Prometheus from '~/icons/prometheus.svg'
 import Nginx from '~/icons/nginx.svg'
 import Docker from '~/icons/docker.svg'
 import Cloudflare from '~/icons/cloudflare.svg'
+import Ubuntu from '~/icons/ubuntu.svg'
 
 export let BrandsMap = {
   React: {
@@ -238,8 +239,11 @@ export let BrandsMap = {
     Icon: Cloudflare,
     url: 'https://www.cloudflare.com/',
   },
+  Ubuntu: {
+    Icon: Ubuntu,
+    url: 'https://ubuntu.com/',
+  },
 }
-
 
 export function Brand(props: {
   name: keyof typeof BrandsMap
