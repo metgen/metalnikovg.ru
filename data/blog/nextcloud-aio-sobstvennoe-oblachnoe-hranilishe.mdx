@@ -1,0 +1,176 @@
+---
+title: 'Nextcloud AIO - собственное облачное хранилище'
+date: '2024-11-21'
+lastmod: '2024-11-21'
+tags: ['docker', 'nextcloud', 'homelab']
+summary: 'Разворачиваем Nextcloud AIO на домашнем сервере при помощи docker'
+images: ['/static/images/blog/nc-aio/banner.png']
+authors: ['default']
+---
+
+[Nextcloud AIO](https://apps.nextcloud.com/apps/nextcloud_all_in_one) (Nextcloud All-in-One) - обеспечивает простоту развертывания и обслуживания, поскольку большинство функций включены в этот экземпляр Nextcloud.
+
+Включены:
+
+- Nextcloud
+- Офис Nextcloud
+- Высокопроизводительный бэкэнд для Nextcloud Files
+- Высокопроизводительный бэкэнд для Nextcloud Talk и TURN-сервера
+- Nextcloud Talk Recording-сервер
+- Решение для резервного копирования (на основе BorgBackup)
+- Imaginary (для предпросмотра heic, heif, illustrator, pdf, svg, tiff и webp)
+- ClamAV (антивирусный бэкэнд для Nextcloud)
+- Полнотекстовый поиск
+
+Так же эта установка работает стабильнее относительно [обычной установки Nextcloud](/blog/nextcloud-domashnee-oblachnoe-hranilishce) в docker контейнере.
+
+## Установка
+
+Пример файла docker-compose.yaml для Nextcloud AIO
+
+```yaml:docker-compose.yaml {18-19} showLineNumbers
+services:
+  nextcloud-aio-mastercontainer:
+    image: nextcloud/all-in-one:latest
+    init: true
+    restart: always
+    container_name: nextcloud-aio-mastercontainer # This line is not allowed to be changed as otherwise AIO will not work correctly
+    volumes:
+      - nextcloud_aio_mastercontainer:/mnt/docker-aio-config # This line is not allowed to be changed as otherwise the built-in backup solution will not work
+      - /var/run/docker.sock:/var/run/docker.sock:ro # May be changed on macOS, Windows or docker rootless. See the applicable documentation. If adjusting, don't forget to also set 'WATCHTOWER_DOCKER_SOCKET_PATH'!
+    ports:
+      #- 80:80 # Can be removed when running behind a web server or reverse proxy (like Apache, Nginx, Caddy, Cloudflare Tunnel and else). See https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md
+      - 8080:8080 # Mastercontainer Interface with self-signed certificate (works always, also if only access via IP-address is possible
+      #- 8443:8443 # Can be removed when running behind a web server or reverse proxy (like Apache, Nginx, Caddy, Cloudflare Tunnel and else). See https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md
+    environment:
+      # Is needed when using any of the options below
+      - APACHE_PORT=11000 # Is needed when running behind a web server or reverse proxy (like Apache, Nginx, Cloudflare Tunnel and else). See https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md
+      - APACHE_IP_BINDING=0.0.0.0 # Should be set when running behind a web server or reverse proxy (like Apache, Nginx, Cloudflare Tunnel and else) that is running on the same host. See https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md
+      - NEXTCLOUD_DATADIR=/mnt/hdd/shared_folder/ncloud # Allows to set the host directory for Nextcloud's datadir. ⚠️⚠️⚠️ Warning: do not set or adjust this value after the initial Nextcloud installation is done! See https://github.com/nextcloud/all-in-one#how-to-change-the-default-location-of-nextclouds-datadir
+      - NEXTCLOUD_MOUNT=/mnt/hdd/shared_folder # Allows the Nextcloud container to access the chosen directory on the host. See https://github.com/nextcloud/all-in-one#how-to-allow-the-nextcloud-container-to-access-directories-on-the-host
+      - NEXTCLOUD_UPLOAD_LIMIT=10G # Can be adjusted if you need more. See https://github.com/nextcloud/all-in-one#how-to-adjust-the-upload-limit-for-nextcloud
+      - NEXTCLOUD_MAX_TIME=3600 # Can be adjusted if you need more. See https://github.com/nextcloud/all-in-one#how-to-adjust-the-max-execution-time-for-nextcloud
+      - NEXTCLOUD_MEMORY_LIMIT=1024M # Can be adjusted if you need more. See https://github.com/nextcloud/all-in-one#how-to-adjust-the-php-memory-limit-for-nextcloud
+      - NEXTCLOUD_STARTUP_APPS=twofactor_totp notes # Allows to modify the Nextcloud apps that are installed on starting AIO the first time. See https://github.com/nextcloud/all-in-one#how-to-change-the-nextcloud-apps-that-are-installed-on-the-first-startup
+      - SKIP_DOMAIN_VALIDATION=true
+volumes:
+  nextcloud_aio_mastercontainer:
+    name: nextcloud_aio_mastercontainer # This line is not allowed to be changed as otherwise the built-in backup solution will not work
+networks: {}
+```
+
+Обязательно перед запуском укажите свой путь в параметрах `NEXTCLOUD_DATADIR` и `NEXTCLOUD_MOUNT`
+
+Запускаем контейнер:
+
+```bash
+docker compose up -d
+```
+
+После запуска переходим в интерефейс мастер контейнера с самоподписанным сертификатом по адресу `https://<YOUR_IP>:8080`
+
+![](/static/images/blog/nc-aio/file-2024-09-29-21-04-21.png)
+
+Копируем и сохраняем куда нибудь кодовую фразу она нам понадобится далее.
+
+![](/static/images/blog/nc-aio/file-2024-09-29-21-05-04.png)
+
+Затем переходим на страницу логина, вставляем кодовую фразу из предыдущего шага и нажимаем `Login`
+
+![](/static/images/blog/nc-aio/file-20241005145606463.png)
+
+Далее вводим домен на котором планируем развернуть Nextcloud AIO
+
+![](/static/images/blog/nc-aio/file-20241005145809085.png)
+
+На следующей странице необходимо выбрать дополнительные контейнеры которые мы планируем использовать. Сохраняем изменения и нажимаем `Download and start containers` и ждем некоторое время.
+
+![](/static/images/blog/nc-aio/file-024-09-30-00-40-02.png)
+
+Дожидаемся когда все контейнеры запустятся и станут зелеными.
+
+## Настройка reverse-proxy
+
+Для доступа к Nextcloud за пределами локальной сети, будем использовать [Traefik](/blog/traefik-obratniy-proksy-dlya-docker-konteynerov). Создадим динамический файл конфигурации со следующим содержимым:
+
+```yml:ext_nextcloud.yml
+http:
+  middlewares:
+    nextcloud-secure-headers:
+      headers:
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        referrerPolicy: "same-origin"
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow"
+    https-redirect:
+      redirectScheme:
+        scheme: https
+        permanent: true
+    nextcloud-chain:
+      chain:
+        middlewares:
+          - https-redirect
+          - nextcloud-secure-headers
+  routers:
+    nextcloud:
+      entrypoints:
+        - "https"
+      rule: "Host(`nextcloud.domain.ru`)"
+      middlewares:
+        - https-redirect
+        - nextcloud-secure-headers
+      tls:
+        domains:
+          - main: "nextcloud.domain.ru"
+      service: nextcloud
+  services:
+    nextcloud:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.78.110:11000"
+        passHostHeader: true
+
+```
+
+После сохранения файла, **Traefik** должен автоматически его подхватить. Перейдите по имени домена, в данном случае `nextcloud.domain.ru` и убедитесь в доступности приложения.
+
+Далее возвращаемся в интерфейс мастер-контейнера, копируем логин и пароль по умолчанию, нажимаем `Open your Nextcloud` и авторизуемся при помощи них. После этого рекомендуется сразу сменить пароль.
+
+## Настройка 2FA
+
+Устанавливаем и активируем приложение `Two-Factor TOTP Provider`.
+
+![](/static/images/blog/nc-aio/file-2024-10-05-15-39-55.png)
+
+Затем переходим в личные Настройки > Безопасность, ставим галочку `Включить TOTP`
+
+![](/static/images/blog/nc-aio/file-2024-10-05 15-41-43.png)
+
+После включения и настройки TOTP, переходим в Параметры сервера > Безопанрсть и активируем переключатель `Требовать двухфакторную аутентификацию`.
+
+## Подключение внешнего хранилища
+
+Скачиваем и активируем приложение `External storage support`
+
+![](/static/images/blog/nc-aio/file-20241005155444450.png)
+
+Переходим в Параметры сервера > Внешнее хранилище. Выбираем локальное хранилище, указываем путь из параметра `NEXTCLOUD_MOUNT` и пользователей для которых оно будет доступно, применяем изменения.\
+
+## Потенциальные проблемы
+
+При попытке открыть документ вы можете получить ошибку:
+
+> Неавторизованный хост WOPI. Попробуйте позже, в случае неудачи сообщите администратору.
+
+Для её исправления, перейдите в Параметры сервера > Офис
+
+![](/static/images/blog/nc-aio/file-20240930211603547.png)
+
+В поле Allow list for WOPI requests добавьте подсеть `0.0.0.0/0` После данной правки все должно заработать.
+
+![](/static/images/blog/nc-aio/file-20241005161132419.png)
+
+## Итог
+
+Мы развернули собственное облако с поддержкой редактирования документов по типу Google Docs и настроили двухфакторную аутентификацию для улучшения безопасности.

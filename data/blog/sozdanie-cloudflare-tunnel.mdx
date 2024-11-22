@@ -1,0 +1,107 @@
+---
+title: 'Cоздание Cloudflare Tunnel'
+date: '2024-11-23'
+lastmod: '2024-11-23'
+tags: ['cloudflare', 'homelab']
+summary: 'Cloudflare Tunnel - публикации сервисов и сайтов без использования белого ip адреса'
+images: ['/static/images/blog/cf-tunnel/banner.png']
+authors: ['default']
+---
+
+Cloudflare Tunnel - это `Zero Trust` туннель который обеспечивает безопасный доступ к локальным ресурсам через Интернет без необходимости в публичных IP-адресах или открытых портах брандмауэра. Имеет ряд ограничений и особенностей таких как ограничение разовой передачи данных (100 Мб за файл на бесплатном плане) более низкая надежность и легкая блокируемость.
+
+## Как это работает?
+
+Туннели Cloudflare работают путем установки приложения/сервиса Cloudflare под названием `Cloudflared`, этот сервис создает обратный туннель, который взаимодействует с серверами Cloudflare и подключается к ближайшему ЦОД Cloudflare. Это устанавливает безопасное соединение между Cloudflare и нашей локальной машиной. Теперь наше устройство может взаимодействовать с Cloudflare.
+
+![](/static/images/blog/cf-tunnel/image.png)
+
+## Создание туннеля
+
+Давайте создадим туннель и выставим тестовое приложение в общедоступный интернет.
+Вначале необходимо перенести управление вашим доменом в Cloudflare, если вы еще это не сделали, то как это сделать можно прочитать [здесь](/blog/publikaciya-lokalnogo-servera-iz-doma-v-interenet). Далее открывем [Cloudflare Dash](https://dash.cloudflare.com/3af6d92d74332b7609625a6b9e0b55b4), в левом меню выбираем `Zero Trust`. Перейдя в панель управления ZeroTrust, выберете в левом меню `Networks` > `Tunnels`
+
+![](/static/images/blog/cf-tunnel/file-2024-09-25-23-13-23.png)
+
+Выбираем тип туннеля `Cloudflared` и нажимаем `Next`
+
+![](/static/images/blog/cf-tunnel/file-2024-09-25-23-14-05.png)
+
+Задаем имя туннеля и снова нажимаем `Next`
+
+![](/static/images/blog/cf-tunnel/file-20240929194126820.png)
+
+В этом примере я буду публиковать [Uptime Kuma](/blog/uptime-kuma-self-hosted-monitoring). В поле `Subdomain` указываем субдомен на котором будет доступен ваш сервис. DNS-запись создастся автоматически для вашего домена при создании туннеля, но при удалении туннеля нужно будет удалять ее вручную. Поле `Type` оставляем без изменений `HTTP`. При использовании в docker контейнере, в поле `URL` вписываем `container_name:port` и нажимаем кнопку `Next`
+
+![](/static/images/blog/cf-tunnel/file-20240929195507908.png)
+
+На следующем шаге вы выбираем операционную систему `Docker` и копируем токен, он понадобится далее.
+
+## Подключение к туннелю
+
+Создаем `.env` файл и вместо `your_tunnel_token` вставляем полученный ранее токен:
+
+```bash
+nano .env
+```
+
+```yml:.env
+TUNNEL_TOKEN='your_tunnel_token'
+```
+
+Затем создаем `docker-compose` файл
+
+```yaml:docker-compose.yaml
+version: "3.8"
+services:
+  uptime-kuma:
+    restart: unless-stopped
+    ports:
+      - 3001:3001
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+    container_name: uptime-kuma
+    image: louislam/uptime-kuma:1
+  cf-tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+```
+
+Запускаем контейнер:
+
+```bash
+docker compose up -d
+```
+
+Если туннель успешно запустился, то в списке туннелей вы увидите статус `HEALTHY`
+
+![](/static/images/blog/cf-tunnel/file-2024-09-25-23-30-02.png)
+
+Перейдите на URL-адрес который вы задали при настройке и проверьте, что он доступен.
+
+Так же его можно использование в связке с обратным прокси сервером, например [traefik](/blog/traefik-obratniy-proksy-dlya-docker-konteynerov), для публикации сразу нескольких сервисов, для этого необходимо добавить к `docker-compose` файл Traefik следующее содержимое:
+
+```
+services:
+  cf-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cf-tunnel
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - proxy
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+```
+
+## Заключение
+
+Мы успешно выставили сервис мониторинга Uptime Kuma в Интернет с помощью туннеля Cloudflare, безопасно, через публичную запись DNS и без использования статического белого IP адреса.

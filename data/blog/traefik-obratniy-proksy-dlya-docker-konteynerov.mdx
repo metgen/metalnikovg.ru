@@ -1,0 +1,656 @@
+---
+title: 'Traefik - обратный прокси для Docker контейнеров'
+date: '2024-11-21'
+lastmod: '2024-11-21'
+tags: ['docker', 'homelab', 'reverse-proxy']
+summary: 'Публикация сервисов из локальной сети в интернет'
+images: ['/static/images/blog/traefik/banner.png']
+authors: ['default']
+---
+
+[Traefik](https://traefik.io/) - это обратный прокси сервер. Его основными преимуществами является наличие собственной панели мониторинга, а так же поддержка Docker “из коробки”. Если вам нужно опубликовать ваши докеризированные сервисы во внешнюю сеть, то **Traefik** будет идеальным для этого решением. Он будет осуществлять ретрансляцию запросов из внешней сети, что позволит скрыть структуру внутренней.
+
+Рассмотрим два способа конфигурирования: при помощи меток и при помощи динамических файлов конфигурации.
+
+## 1. Конфигурирование Traefik с помощью меток
+
+Запускать Traefik будем в докере, поэтому он должен быть заранее установлен
+
+**Обновляем пакеты**
+
+```bash
+apt update && apt upgrade -y
+```
+
+**Устанавливаем docker**
+
+```bash
+curl -sSL https://get.docker.com | sh
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+sudo apt install docker-compose
+sudo systemctl enable docker
+sudo reboot
+```
+
+Для запуска будем использовать официальный [Docker образ](https://hub.docker.com/_/traefik), но прежде чем запустить наш контейнер, необходимо создать конфигурационный файл, создать docker-сеть, выпустить API-токен **Cloudflare** для выпуска и обновления сертификатов а так же настроить парольный доступ к панели мониторинга.
+
+И так создаем папку traefik и переходим в нее:
+
+```bash
+mkdir traefik && cd traefik
+```
+
+Создаем файл docker-compose:
+
+```bash
+nano docker-compose.yml
+```
+
+со следующим содержимым:
+
+```yaml:docker-compose.yaml {15-16, 28, 33, 37-38} showLineNumbers
+version: "3.8"
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      proxy: null
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - CF_API_EMAIL=youremail@gmail.com
+      - CF_DNS_API_TOKEN=cf_api_token
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - ./acme.json:/acme.json
+      - ./config.yml:/config.yml:ro
+      - ./logs:/var/log/traefik
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.entrypoints=http
+      - traefik.http.routers.traefik.rule=Host(`traefik.domain.ru`)
+      - traefik.http.middlewares.traefik-auth.basicauth.users=user:password
+      - traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https
+      - traefik.http.routers.traefik.middlewares=traefik-https-redirect
+      - traefik.http.routers.traefik-secure.entrypoints=https
+      - traefik.http.routers.traefik-secure.rule=Host(`traefik.domain.ru`)
+      - traefik.http.routers.traefik-secure.middlewares=traefik-auth
+      - traefik.http.routers.traefik-secure.tls=true
+      - traefik.http.routers.traefik-secure.tls.certresolver=cloudflare
+      - traefik.http.routers.traefik-secure.tls.domains[0].main=domain.ru
+      - traefik.http.routers.traefik-secure.tls.domains[0].sans=*.domain.ru
+      - traefik.http.routers.traefik-secure.service=api@internal
+networks:
+  proxy:
+    name: proxy
+    external: true
+```
+
+### 1.1 Получения API-токена Cloudflare
+
+Приступаем к выпуске API-токена Cloudflare, как это сделать, можно прочитать в заметке по развертыванию [Nginx Proxy Manager](/blog/publikaciya-lokalnogo-servera-iz-doma-v-interenet). Для этого переходим в наш профиль, в раздел [API](https://dash.cloudflare.com/profile/api-tokens) нажимаем **Create Token -> Edit zone DNS**
+
+![](/static/images/blog/traefik/file-20241008113432788.png)
+
+В `Zone Resources` можете выбрать нужную DNS-зону если у вас из несколько. А в `Client IP Filtering` по желанию можете указать ваш белый статический IP с оператором `ls in`, делается это на случай того, если ваш токен будет скомпрометирован, то злоумышленник не смог им воспользоваться.
+
+Копируем полученный токен и сохраняем его в надежном месте, т.к. посмотреть вы его больше не сможете. Если потеряете его то придется перевыпускать.
+
+Возвращаемся в наш файл docker compose и вставляем полученный токен в переменную `CF_DNS_API_TOKEN`, а в `CF_API_EMAIL` вписываем **ваш email** от аккаунта **Cloudflare**.
+
+### 1.2 Создаем пароль для панели мониторинга
+
+Для создания хэшированного пароля для basicauth авторизации, нам понадобится установить утилиту `apache2-utils`
+
+```bash
+sudo apt install apache2-utils
+```
+
+Затем выполняем следующую команду предварительно заменив `user` на любое желаемое имя пользователя
+
+```bash
+echo $(htpasswd -nB user | sed -e s/\\$/\\$\\$/g
+```
+
+Вам нужно будет ввести и подтвердить пароль, после чего вы получите ваш хешированный пароль:
+
+![](/static/images/blog/traefik/file-20241008120529106.png)
+
+Копируем полностью полученную строку и вставляем в метку `traefik.http.middlewares.traefik-auth.basicauth.users`
+
+### 1.3 Создаем docker сеть
+
+Создаем docker сеть `proxy`:
+
+```bash
+docker network create proxy
+```
+
+### 1.4 Создаем файлы конфигурации
+
+Создаем файл статической конфигурации:
+
+```bash
+nano traefik.yml
+```
+
+со следующим содержимым:
+
+```yml:traefik.yml {25} showLineNumbers
+api:
+  dashboard: true
+  debug: true
+entryPoints:
+  http:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+  https:
+    address: ":443"
+serversTransport:
+  insecureSkipVerify: true
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    filename: /config.yml
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: youremail@gmail.com #add your email
+      storage: acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+log:
+  level: "INFO"
+  filePath: "/var/log/traefik/traefik.log"
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+```
+
+Создаем файл динамической конфигурации, но пока оставим его пустым:
+
+```bash
+nano config.yml
+```
+
+И создаем пустой файл `acme.json` в нем будут храниться сведения о сертификатах
+
+```bash
+nano acme.json
+```
+
+На этом в принципе все готово, но если запустить контейнер прямо сейчас, мы увидим в логах следующую ошибку:
+
+> ERR The ACME resolve is skipped from the resolvers list error="unable to get ACME account: permissions 644 for acme.json are too open, please use 600" resolver=cloudflare
+
+Проверяем и выставляем ему права:
+
+```bash
+ll
+sudo chmod 600 acme.json
+```
+
+```
+docker comopose up -d
+```
+
+После запуска, переходим по ранее указанному адресу `traefik.example.com` и попадаем в дашборд traefik'a:
+
+![](/static/images/blog/traefik/file-20241011185231927.png)
+
+### 1.5 Подключение сервисов
+
+Чтобы опубликовать ваше docker-приложение во внешнюю сеть, необходимо добавить метки в его `docker-compose` файл и подключить к docker-сети traefik'а. Рассмотрим в качестве примера [Homarr](/blog/homarr-dashbord-dlya-vashej-domashnej-laboratorii):
+
+```yaml:docker-compose.yaml
+version: "3"
+services:
+  homarr:
+    container_name: homarr
+    image: ghcr.io/ajnart/homarr:latest
+    restart: unless-stopped
+    volumes:
+      # - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
+      - ./homarr/configs:/app/data/configs
+      - ./homarr/icons:/app/public/icons
+      - ./homarr/data:/data
+    ports:
+      - 7575:7575
+    networks:
+      proxy: null
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.homarr.entrypoints=http
+      - traefik.http.routers.homarr.rule=Host(`home.domain.ru`)
+      - traefik.http.middlewares.homarr-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.homarr-secure.entrypoints=https
+      - traefik.http.routers.homarr-secure.rule=Host(`home.domain.ru`)
+      - traefik.http.routers.homarr-secure.tls=true
+      - traefik.http.routers.homarr-secure.service=homarr
+      - traefik.http.services.homarr.loadbalancer.server.port=7575
+      - traefik.docker.network=proxy
+networks:
+  proxy:
+    external: true
+```
+
+И в качестве еще одного примера [Vaultwarden](/blog/vaultwarden-sobstvenniy-menedjer-paroley):
+
+```yaml:docker-compose.yaml
+version: "3"
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      - SIGNUPS_ALLOWED=false
+    volumes:
+      - ./vw-data:/data
+    networks:
+      proxy: null
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vaultwarden.entrypoints=http
+      - traefik.http.routers.vaultwarden.rule=Host(`vaultwarden.domain.ru`)
+      - traefik.http.middlewares.vaultwarden-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.vaultwarden.middlewares=vaultwarden-https-redirect
+      - traefik.http.routers.vaultwarden-secure.entrypoints=https
+      - traefik.http.routers.vaultwarden-secure.rule=Host(`vaultwarden.domain.ru`)
+      - traefik.http.routers.vaultwarden-secure.tls=true
+      - traefik.http.routers.vaultwarden-secure.service=vaultwarden
+      - traefik.http.services.vaultwarden.loadbalancer.server.port=80
+      - traefik.docker.network=proxy
+    security_opt:
+      - no-new-privileges:true
+networks:
+  proxy:
+    external: true
+```
+
+Если сервис уже запущен, то измените файл `docker-compose` и перезапустите контейнер, после этого приложение будет доступно по заданному адресу.
+
+## 2. Конфигурация Traefik с помощью файлов динамической конфигураций
+
+Этот подход является более простым, надежным и понятным. Вам практически не нужно будет редактировать каждый `docker-compose` файл. Вместо этого вы будете создавать динамический файл конфигурации для каждого сервиса и все его изменения будут автоматически подхватываться `Traefik`.
+
+Создаем файл `docker-compose` без меток и в volume вместо конкретного файла `config.yml` монтируем директорию `config` в которой будут храниться файлы динамической конфигурации:
+
+```yaml:docker-compose.yaml {22} showLineNumbers
+version: "3.8"
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - CF_API_EMAIL=youremail@gmail.com
+      - CF_DNS_API_TOKEN=cf_api_token
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - ./acme.json:/acme.json
+      - ./config:/config:ro
+      - ./logs:/var/log/traefik
+networks:
+  proxy:
+    name: proxy
+    external: true
+```
+
+Создаем файл статической конфигурации `traefik.yml` и добавляем директорию `/config` в провайдеры:
+
+```yml:traefik.yml {22} showLineNumbers
+api:
+  dashboard: true
+  debug: true
+entryPoints:
+  http:
+    address: ":80"
+    http:
+      middlewares:
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+  https:
+    address: ":443"
+    http:
+      middlewares:
+
+serversTransport:
+  insecureSkipVerify: true
+providers:
+  file:
+    directory: /config
+    watch: true
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: youremail@gmail.com #add your email
+      storage: acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+log:
+  level: "INFO"
+  filePath: "/var/log/traefik/traefik.log"
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+```
+
+Создаем папку `config`:
+
+```bash
+mkdir config
+```
+
+Создаем пустой файл `acme.json` в нем будут храниться сведения о сертификатах:
+
+```bash
+nano acme.json
+```
+
+Выставляем нужные права:
+
+```bash
+sudo chmod 600 acme.json
+```
+
+### 2.1 Создание файлов динамической конфигурации
+
+В директории `/config` будут размещаться файлы динамической конфигурации в которую вносятся все настройки проксирования.
+
+> [!tip]
+> Для удобной навигации в конфигурации применяются следующие правила именования:
+>
+> - `<name>.yml` - служебный файл содержащий настройки промежуточного слоя middlewares
+> - `ext_<name>.yml` - конфигурация приложения которое размещается в общем доступе из интернета. В нем отсутствует настройка `ip-allow-list`
+> - `int_<name>.yml` - обычное приложение для внутренней сети
+
+Создаем файл `ip-allow-list` он будет служить для ограничения доступа к сервисам во внутренней сети, в нем необходимо указать адрес локальной подсети или подсетей для которых сервис будет доступен:
+
+```yml:ip-allow-list.yml
+http:
+  middlewares:
+    ip-allow-list:
+      ipAllowList:
+        sourceRange:
+          - "192.168.0.0/24"
+          - "192.168.1.0/24"
+          - "192.168.2.0/24"
+          - "192.168.4.0/24"
+```
+
+Т.к. мы убрали метки с контейнера самого **Traefik** создадим для него динамическую конфигурацию с `Basic Auth` авторизацией. Генерируем пароль на [сайте](https://hostingcanada.org/htpasswd-generator/) либо с помощью следующей команды:
+
+```bash
+htpasswd -nbm user password
+```
+
+Полученный ответ копируем в последнюю сторку нашего конфиг файла:
+
+```yml:ext_traefik.yml
+http:
+  routers:
+    traefik:
+      rule: "Host(`traefik.domain.ru`)"
+      entrypoints:
+        - http
+      middlewares:
+        - traefik-auth
+      service: api@internal
+
+    traefik-secure:
+      rule: "Host(`traefik.domain.ru`)"
+      entrypoints:
+        - https
+      middlewares:
+        - traefik-auth
+      tls: true
+      service: api@internal
+
+  middlewares:
+    traefik-https-redirect:
+      redirectScheme:
+        scheme: https
+    traefik-auth:
+      basicauth:
+        removeHeader: true
+        users:
+          - "admin:$apr1$qe69dnj0$eaQ1.qGb/HschwCrLtx2N/"
+
+```
+
+Шаблон динамической конфигурации будет выглядеть следующим образом:
+
+```yaml:template
+http:
+  routers:
+    <name>:
+      rule: "Host(`<name>.<domain>.ru`)"
+      entrypoints:
+        - http
+      middlewares:
+        - <name>-https-redirect
+        - authentik #if use authentik
+        - ip-allow-list #dont use for external service
+      service: <name>
+
+    <name>-secure:
+      rule: "Host(`<name>.<domain>.ru`)"
+      entrypoints:
+        - https
+      middlewares:
+        - authentik #if use authentik
+        - ip-allow-list #dont use for external service
+      tls: true
+      service: <name>
+
+  middlewares:
+    <name>-https-redirect:
+      redirectScheme:
+        scheme: https
+
+  services:
+    <name>:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.78.110:1234"
+```
+
+Этот шаблон можно будет использовать практически для всех внутренних и внешних сервисов, кроме например таких как [Nextcloud AIO](/blog/nextcloud-aio-sobstvennoe-oblachnoe-hranilishe).
+
+### 2.2 Конфигурация для локального сервиса
+
+Зачем настраивать обратный прокси для локального сервиса? Ответ очень простой, если вы не хотите каждый раз вводить IP адрес и порт чтобы получить к нему доступ. а хотите просто в адресной строке набрать `adguard.domain.ru` и попасть в свой локальный **Adguard Home**, то вам это необходимо.
+Сделать это просто если вы используете **Cloudflare** для управления вашей DNS зоной, то просто создайте `A запись` для субдомена `adguard` c указанием IP адреса хоста на котором развернут **Traefik** без проксирования. При использовании другого DNS провайдера вы можете использовать функцию **Перезапись DNS-запросов** в том же **Adguard Home**.
+
+Создадим файл конфигурации например для нашего локального DNS сервиса [Adguard Home](/blog/adguard-home-dns-server-dlya-doma), админ панель которого доступна на порту `5000`
+
+```
+http:
+  routers:
+    adguard:
+      rule: "Host(`adguard.domain.ru`)"
+      entrypoints:
+        - http
+      middlewares:
+        - adguard-https-redirect
+        - ip-allow-list
+      service: adguard
+
+    adguard-secure:
+      rule: "Host(`adguard.domain.ru`)"
+      entrypoints:
+        - https
+      middlewares:
+        - ip-allow-list
+      tls: true
+      service: adguard
+
+  middlewares:
+    adguard-https-redirect:
+      redirectScheme:
+        scheme: https
+
+  services:
+    adguard:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.78.110:5000"
+```
+
+Если ваши docker-сервисы развернуты на одном хосте с **Traefik** вы можете подключить их к его docker-сети:
+
+```yaml
+    networks:
+      proxy: null
+networks:
+  proxy:
+    external: true
+```
+
+После этого вы сможете обращаться к контейнеру по его имени, например:
+
+```yaml
+services:
+  adguard:
+    loadBalancer:
+      servers:
+        - url: 'http://adguard:5000'
+```
+
+### 2.2 Конфигурация для внешнего сервиса
+
+Шаблон для внешнего сервиса будет такой же как и для внутреннего, но в нем не будет использоваться промежуточный слой `ip-allow-list`.
+
+## 3. Балансировка нагрузки
+
+Одной из ключевых возможностей Traefik, является осуществление балансировки нагрузки между экземплярами одного и того же сервиса. Чтобы продемонстрировать данный функционал, создадим тестовый nginx-контейнер, положим в папку `src` простой файл `index.html`
+
+```yaml:docker-compose.yaml
+version: "3"
+
+services:
+    test:
+        image: nginx
+        ports:
+            - 80
+        volumes:
+            - ./src:/usr/share/nginx/html
+        restart: unless-stopped
+        networks:
+            proxy: null
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.test.entrypoints=http
+            - traefik.http.routers.test.rule=Host(`test.domain.ru`)
+            - traefik.http.middlewares.test-https-redirect.redirectscheme.scheme=https
+            - traefik.http.routers.test.middlewares=test-https-redirect
+            - traefik.http.routers.test-secure.entrypoints=https
+            - traefik.http.routers.test-secure.rule=Host(`test.domain.ru`)
+            - traefik.http.routers.test-secure.tls=true
+            - traefik.http.routers.test-secure.service=test
+            - traefik.http.services.test.loadbalancer.server.port=80
+            - traefik.docker.network=proxy
+        security_opt:
+            - no-new-privileges:true
+networks:
+  proxy:
+    external: true
+```
+
+Запускаем контейнер:
+
+```bash
+docker compose up -d
+```
+
+Масштабируем запущенный контейнер:
+
+```bash
+docker compose up --scale test=2 -d
+```
+
+После этого переходим в дашборд Traefik, в раздел **HTTP Services** и убеждаемся, что балансировщик видит оба экземпляра тестового сервиса. Как видите в разделе **Servers** их два:
+
+![](/static/images/blog/traefik/file-20241016235620133.png)
+
+Если же посмотреть логи docker-compose, то можно увидеть, что Traefik балансирует входящие запросы на оба экземпляра:
+
+```
+141.101.105.14 - - [16/Oct/2024:20:52:36 +0000] "GET / HTTP/2.0" 304 0 "-" "-" 76149 "test-secure@docker" "http://192.168.32.9:80" 3ms
+141.101.105.14 - - [16/Oct/2024:20:52:37 +0000] "GET / HTTP/2.0" 304 0 "-" "-" 76150 "test-secure@docker" "http://192.168.32.4:80" 3ms
+```
+
+> [!warning]
+> К сожалению с динамической конфигурацией балансировка работает не корректно. При остановке одного из контейнеров Traefik не видит, что один из контейнеров не запущен и продолжает балансировку. В итоге при использовании сервиса мы периодически будем получать ошибку 502.
+
+## 4. Настройка ротации логов Trefik
+
+Для того чтобы файлы логов не занимали большое количество места, необходимо настроить их ротацию с помощью встроенной программы `logrotate`. Для ротации необходимо создать файл с настройками.
+
+```bash
+sudo nano /etc/logrotate.d/traefik
+```
+
+```bash
+/home/user/traefik/logs/*.log {
+  size 10M
+  rotate 5
+  missingok
+  notifempty
+  postrotate
+    docker kill --signal="USR1" traefik
+  endscript
+}
+```
+
+Где
+
+- `/home/user/docker/traefik/logs` - путь к файлам логов
+- `traefik` - имя контейнера
+
+Запустить:
+
+```bash
+sudo logrotate /etc/logrotate.conf --debug
+sudo logrotate /etc/logrotate.conf
+```
+
+## Заключение
+
+Мы развернули Traefik в качестве нашего обратного-прокси сервера а так же попробовали два способа его использования с метками и динамической конфигурацией. Подключили Cloudflare DNS Challenge для автоматического выпуска и обновления сертификатов. Протестировали работу балансировщика нагрузки.
