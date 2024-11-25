@@ -1,0 +1,476 @@
+---
+title: 'Реализация SSO с помощью Authentik'
+date: '2024-11-24'
+lastmod: '2024-11-24'
+tags: ['docker', 'homelab', 'authentik', 'sso', 'security']
+summary: 'Реализуем технологию единого входа (SSO) в домашней лаборатории с помощью Authentik'
+images: ['/static/images/blog/authentik/banner.png']
+authors: ['default']
+---
+
+## Введение
+
+[Authentik](https://goauthentik.io/) - это провайдер аутентификации с [открытым исходным кодом](https://github.com/goauthentik/authentik?tab=readme-ov-file), который отличается гибкостью и универсальностью, поддерживая широкий набор протоколов.
+
+При развертывании приложений в домашней лаборатории вы можете столкнуться с тем, что некоторые из них вовсе не поддерживают аутентификацию либо поддерживают базовую в которой могут иметься уязвимости. Так же малое количество сервисов из коробки поддерживает 2FA (двухфакторная аутентификация). Помимо этого для каждого сервиса вам приходится придумывать отдельно логин и пароль, что может запутать когда этих сервисов у вас много. Выход из всего этого есть и это - Authentik.
+
+Технология единого входа (Single sign-on SSO) — метод аутентификации, который позволяет пользователям безопасно аутентифицироваться сразу в нескольких приложениях и сайтах, используя один набор учетных данных.
+
+## Развертывание Authentik
+
+Развертывать Authentik будем при помощи Docker Compose и использовать в связке с обратным прокси сервером [Traefik](/blog/traefik-obratniy-proksy-dlya-docker-konteynerov). Для этого переходим на [страницу документации](https://docs.goauthentik.io/docs/install-config/install/docker-compose) Authentik с использованием Docker Compose и внимательно изучаем ее. Нам предлагается сразу загрузить готовый `docker-compose` файл при помощи команды:
+
+```bash
+wget https://goauthentik.io/docker-compose.yml
+```
+
+> [!warning]
+> Так как Authentik не поддерживает тег `latest` после каждого обновления на сайте публикуется новый `docker-compose` файл с изменения версий docker образов.
+
+Возьмем за основу шаблон с сайта для версии `2024.8.3` актуальной на момент написания заметки.
+
+```yaml:docker-compose.yaml
+services:
+  postgresql:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASS:?database password required}
+      POSTGRES_USER: ${PG_USER:-authentik}
+      POSTGRES_DB: ${PG_DB:-authentik}
+    env_file:
+      - .env
+  redis:
+    image: docker.io/library/redis:alpine
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli ping | grep PONG
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - redis:/data
+  server:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2024.8.3}
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+    volumes:
+      - ./media:/media
+      - ./custom-templates:/templates
+    env_file:
+      - .env
+    ports:
+      - ${COMPOSE_PORT_HTTP:-9000}:9000
+      - ${COMPOSE_PORT_HTTPS:-9443}:9443
+    depends_on:
+      - postgresql
+      - redis
+  worker:
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2024.8.3}
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: ${PG_USER:-authentik}
+      AUTHENTIK_POSTGRESQL__NAME: ${PG_DB:-authentik}
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${PG_PASS}
+    # `user: root` and the docker socket volume are optional.
+    # See more for the docker socket integration here:
+    # https://goauthentik.io/docs/outposts/integrations/docker
+    # Removing `user: root` also prevents the worker from fixing the permissions
+    # on the mounted folders, so when removing this make sure the folders have the correct UID/GID
+    # (1000:1000 by default)
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./media:/media
+      - ./certs:/certs
+      - ./custom-templates:/templates
+    env_file:
+      - .env
+    depends_on:
+      - postgresql
+      - redis
+volumes:
+  database:
+    driver: local
+  redis:
+    driver: local
+networks: {}
+```
+
+Далее согласно документации нужно сгенерировать пароль и секретный ключ в файл с переменными `.env`
+
+```bash
+echo "PG_PASS=$(openssl rand -base64 36 | tr -d '\n')" >> .env
+echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
+```
+
+Так же можно настроить порты, т.к. по умолчанию authentik прослушивает внутренний порт 9000 для HTTP и 9443 для HTTPS. Поэтому чтобы пробросить порты 80 и 443, вы можете задать переменные `COMPOSE_PORT`. Но нам это не нужно так как на этих портах уже работает Traefik.
+
+```shell:.env
+PG_PASS=
+AUTHENTIK_SECRET_KEY=
+#COMPOSE_PORT_HTTPS=80
+#COMPOSE_PORT_HTTP=433
+# SMTP Host Emails are sent to
+AUTHENTIK_EMAIL__HOST=localhost
+AUTHENTIK_EMAIL__PORT=25
+# Optionally authenticate (don't add quotation marks to your password)
+AUTHENTIK_EMAIL__USERNAME=
+AUTHENTIK_EMAIL__PASSWORD=
+# Use StartTLS
+AUTHENTIK_EMAIL__USE_TLS=false
+# Use SSL
+AUTHENTIK_EMAIL__USE_SSL=false
+AUTHENTIK_EMAIL__TIMEOUT=10
+# Email address authentik will send from, should have a correct @domain
+AUTHENTIK_EMAIL__FROM=authentik@localhost
+```
+
+Перед запуском контейнера обязательно проверьте локальное время на сервере, чтобы избежать проблем с аутентификацией.
+
+```bash
+timedatectl
+```
+
+```bash:output
+               Local time: Sat 2024-10-19 23:59:41 MSK
+           Universal time: Sat 2024-10-19 20:59:41 UTC
+                 RTC time: Sat 2024-10-19 20:59:41
+                Time zone: Europe/Moscow (MSK, +0300)
+System clock synchronized: yes
+              NTP service: active
+          RTC in local TZ: no
+```
+
+Если время не совпадает то найдите и установите ваш часовой пояс:
+
+```bash
+timedatectl list-timezones
+```
+
+```bash
+sudo timedatectl set-timezone Europe/Moscow
+```
+
+Запускаем контейнер:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+После запуска переходим по адресу `http://<your server's IP or hostname>:9000/if/flow/initial-setup/` для первоначальной настройки. Там вам будет предложено установить пароль для пользователя по умолчанию `akadmin`. После того как создали пароль и авторизовались создайте субдомен для Authentik, например `authentik.domain.ru`
+
+## Конфигурирование Traefik
+
+Создаем файл динамической конфигурации для Authentik:
+
+```yml:ext_authentik.yml
+http:
+  routers:
+    authentik:
+      rule: "Host(`authentik.domain.ru`)"
+      entrypoints:
+        - http
+      middlewares:
+        - authentik-https-redirect
+      service: authentik
+
+    authentik-secure:
+      rule: "Host(`authentik.domain.ru`)"
+      entrypoints:
+        - https
+      middlewares:
+      tls: true
+      service: authentik
+
+  middlewares:
+    authentik-https-redirect:
+      redirectScheme:
+        scheme: https
+
+  services:
+    authentik:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.78.110:9000"
+```
+
+И сразу создадим промежуточный слой, который будет использоваться для включения авторизации в наших сервисах.
+
+```yml:authentik.yml
+http:
+  middlewares:
+    authentik:
+      forwardAuth:
+        address: "http://192.168.78.110:9000/outpost.goauthentik.io/auth/traefik"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - X-authentik-username
+          - X-authentik-groups
+          - X-authentik-email
+          - X-authentik-name
+          - X-authentik-uid
+          - X-authentik-jwt
+          - X-authentik-meta-jwks
+          - X-authentik-meta-outpost
+          - X-authentik-meta-provider
+          - X-authentik-meta-app
+          - X-authentik-meta-version
+```
+
+И еще один промежуточный слой для arr-стека, если вы планируете использовать Sonarr, Radarr, Prowlarr и т.д.
+
+```yml:media-authentik.yml
+http:
+  middlewares:
+    authentik-media:
+      forwardAuth:
+        address: "http://192.168.78.110:9000/outpost.goauthentik.io/auth/traefik"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - X-authentik-username
+          - X-authentik-groups
+          - X-authentik-email
+          - X-authentik-name
+          - X-authentik-uid
+          - X-authentik-jwt
+          - X-authentik-meta-jwks
+          - X-authentik-meta-outpost
+          - X-authentik-meta-provider
+          - X-authentik-meta-app
+          - X-authentik-meta-version
+          - Authorization
+```
+
+Теперь переходим по вашему адресу `authentik.domain.ru` и логинимся.
+
+## Настройка Authentik
+
+### Создание пользователя
+
+Переходим в интерфейс администратора.
+
+![](/static/images/blog/authentik/file-20241020003952279.png)
+
+Затем в левом меню переходим в Каталог > Пользователи и нажимаем **Создать**.
+
+![](/static/images/blog/authentik/file-20241020010002719.png)
+
+Указываем username, отображаемое имя и почту.
+
+![](/static/images/blog/authentik/file-20241020004352142.png)
+
+Теперь нам нужно установить пароль, для этого переходим в созданного пользователя и нажимаем **Установить пароль**
+
+![](/static/images/blog/authentik/file-20241020005511252.png)
+
+Затем переходим в группы, выбираем `authentik Admins`, переходим на вкладку пользователи и нажимаем **Добавить существующего пользователя**, выбираем нашего пользователя **User** из списка и нажимаем добавить.
+
+![](/static/images/blog/authentik/file-20241020005709057.png)
+
+Наш пользователь добавлен в группу суперпользователей. Теперь разлогинимся из аккаунта `akadmin` и авторизуемся под новым пользователем. После чего снова перейдем в раздел Пользователи, проваливаемся в пользователя `akadmin` и отключаем его нажав кнопку **Деактивировать**
+
+### Подключаем двухфакторную аутентификацию (2FA)
+
+Нажимаем шестеренку в правом верхнем углу экрана или на иконку пользователя в нижнем левом если вы находитесь в панели администратора. Выбираем MFA-устройства и зарегистрировать **TOTP Device**
+
+![](/static/images/blog/authentik/file-20241020011329857.png)
+
+После этого вас перекинет на страницу привязки устройства.
+
+![](/static/images/blog/authentik/file-20241020011836719.png)
+
+После этого перелогиниваемся и проверяем что после ввода пароля у вас запросят еще и OTP-код.
+
+### Создание провайдера и подключение приложения
+
+Переходим в раздел провайдеры и создаем провайдера:
+
+![](/static/images/blog/authentik/file-2024-10-12-16-38-51.png)
+
+Выбираем тип провайдера Proxy Provider:
+
+![](/static/images/blog/authentik/file-2024-10-12-16-39-24.png)
+
+Поток провайдера выбираем `explicit` и Прямая аутентификация (уровень домена):
+
+![](/static/images/blog/authentik/file-2024-10-12-16-42-01.png)
+
+Прописываем наш субдомен на котором работает Authentik и домен для cookie:
+
+![](/static/images/blog/authentik/file-2024-10-12-16-42-50.png)
+
+После создания провайдера видим предупреждение что к нему не привязано ни одно приложение
+
+![](/static/images/blog/authentik/file-2024-10-12-16-43-32.png)
+
+Переходим в раздел приложения и приступаем к созданию, обязательно выбираем ранее созданный провайдер.
+
+![](/static/images/blog/authentik/file-2024-10-12-16-46-20.png)
+
+После создания приложения, предупреждение должно исчезнуть.
+
+![](/static/images/blog/authentik/file-2024-10-12-16-46-57.png)
+
+Теперь переходим в раздел внешние компоненты и перемещаем наше приложение из **Доступные приложения** в **Выбранные приложения**:
+
+![](/static/images/blog/authentik/file-2024-10-12-16-48-33.png)
+
+В конфигурации обязательно проверяем что имя домена для `authentik_host` указано верно.
+
+![](/static/images/blog/authentik/file-20241020022856493.png)
+
+На этом конфигурация окончена.
+
+### Подключаем Authentik к Traefik и проксируемым через него приложениям
+
+Теперь перейдем к файлу динамической конфигурации самого Traefik и подключим аутентификацию, добавив промежуточный слой `authentik`
+
+```yml:ext_traefik.yml {9,17} showLineNumbers
+http:
+  routers:
+    traefik:
+      rule: "Host(`traefik.domain.ru`)"
+      entrypoints:
+        - http
+      middlewares:
+        - traefik-https-redirect
+        - authentik
+      service: api@internal
+
+    traefik-secure:
+      rule: "Host(`traefik.domain.ru`)"
+      entrypoints:
+        - https
+      middlewares:
+        - authentik
+      tls: true
+      service: api@internal
+
+  middlewares:
+    traefik-https-redirect:
+      redirectScheme:
+        scheme: https
+
+```
+
+Теперь при входе в дашборд Traefik необходимо будет авторизоваться.
+
+![](/static/images/blog/authentik/file-20241020165438127.png)
+
+После этого можно подключить аутентификацию на любом вашем сервисе, просто добавив промежуточный слой. Но при подключении к другим приложениям, экран входа меняться не будет. Всегда будет написано `Войдите чтобы перейти на traefik`.
+Чтобы этого избежать нужно как и ранее создать еще одного Proxy-провайдера но выбрать **Переадресация аутентификации (одно приложение)** и указать домен на котором развернуто приложение.
+
+![](/static/images/blog/authentik/file-20241020170656025.png)
+
+### Подключение OIDC-аутентификации
+
+OpenID Connect (OIDC) — протокол аутентификации и получения информации о пользователе из внешней системы. Протокол обратно совместим с OAuth, разница заключается в том, что OpenID Connect используется для аутентификации, а OAuth для авторизации.
+
+На [странице документации](https://docs.goauthentik.io/integrations/) есть множество примеров интеграции со многими популярными приложениями, но некоторых в этом списке нет. Например разберем пример включения OIDC аутентификации на примере дашборда [Homarr](/blog/homarr-dashbord-dlya-vashej-domashnej-laboratorii). Из документации - [Single Sign On | Homarr documentation](https://homarr.dev/docs/advanced/sso/) мы видим что само приложение это поддерживает, но нужно изменить `docker-compose` файл добавив туда некоторые переменные.
+
+```yaml:docker-compose.yaml
+version: "3"
+services:
+  homarr:
+    container_name: homarr
+    image: ghcr.io/ajnart/homarr:fix-oidc-wrong-redirect
+    restart: unless-stopped
+    volumes:
+      # - /var/run/docker.sock:/var/run/docker.sock # Optional, only if you want docker integration
+      - ./homarr/configs:/app/data/configs
+      - ./homarr/icons:/app/public/icons
+      - ./homarr/data:/data
+    environment:
+      AUTH_PROVIDER: oidc
+      AUTH_OIDC_URI: https://authentik.domain.ru/application/o/homarr
+      AUTH_LOGOUT_REDIRECT_URL: https://authentik.domain.ru/application/o/homarr/end-session/
+      AUTH_OIDC_CLIENT_SECRET: ${AUTH_OIDC_CLIENT_SECRET}
+      AUTH_OIDC_CLIENT_ID: ${AUTH_OIDC_CLIENT_ID}
+      AUTH_OIDC_CLIENT_NAME: Authentik
+      AUTH_OIDC_ADMIN_GROUP: authentik Admins
+      AUTH_OIDC_OWNER_GROUP: admin
+      AUTH_OIDC_TIMEOUT: 3500
+      AUTH_OIDC_AUTO_LOGIN: false
+    ports:
+      - 7575:7575
+networks: {}
+```
+
+Создаем файл для хранения переменных `.env`:
+
+```bash
+nano .env
+```
+
+Вместо **your_client_secret** и **your_client_id** вставляем соответствующие данные полученные из **Authentik**:
+
+```bash:.env
+AUTH_OIDC_CLIENT_SECRET='your_client_secret'
+AUTH_OIDC_CLIENT_ID='your_client_id'
+```
+
+> [!note]
+> На момент написания заметки, в образе `latest` были [проблемы](https://github.com/ajnart/homarr/issues/1909) с редиректом после включения OIDC, поэтому использовался тег [fix-oidc-wrong-redirect](https://github.com/ajnart/homarr/pkgs/container/homarr/286685278?tag=fix-oidc-wrong-redirect).
+
+После этого нужно перейти в Authentik и создать новое приложение и провайдера.
+
+![](/static/images/blog/authentik/file-20241020203819828.png)
+
+В **Перенаправляющие URI/Источники (RegEx)** указываем имя домена Homarr, например `https://homarr.domain.ru`
+
+![](/static/images/blog/authentik/file-20241020203947368.png)
+
+Копируем ID Клиента и Секрет клиента, вставляем в соответствующие переменные `docker-compose` файла.
+
+Создаем приложение и подключаем к нему ранее созданного провайдера.
+
+![](/static/images/blog/authentik/file-20241020204341491.png)
+
+Разворачиваем настройки пользовательского интерфейса и указываем имя домена на котором развернут Homarr.
+
+![](/static/images/blog/authentik/file-20241020204555321.png)
+
+После этого переходим в раздел Провайдеры, нажимаем на наш провайдер и справа вы увидите ссылки для редиректа. Нам понадобится **Эмитент конфигурации OpenID** для переменной `AUTH_OIDC_URI` и **URL-адрес выхода из системы** для `AUTH_LOGOUT_REDIRECT_URL`
+
+![](/static/images/blog/authentik/file-20241020205138968.png)
+
+После этого запускаем контейнер и видим что теперь мы можем войти с помощью Authentik
+
+![](/static/images/blog/authentik/file-20241020214441440.png)
+
+Возьмем еще один пример - [Portainer](/blog/portainer-panel-upravleniya-docker). Здесь все немного проще, во первых есть [документация по интеграции](https://docs.goauthentik.io/integrations/services/portainer/) а во вторых все переменные можно задать прям в панели управления.
+
+![](/static/images/blog/authentik/file-20241020214900173.png)
+
+Cохраните настройки выйдите из аккаунта и убедитесь что теперь доступна аутентификация через OAuth.
+
+![](/static/images/blog/authentik/file-20241020234247821.png)
+
+## Заключение
+
+Мы развернули Authentik в паре с Traefik и настроили и подключили к нему приложения.

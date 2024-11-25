@@ -1,0 +1,309 @@
+---
+title: 'Повышение безопасности Docker с помощью CrowdSec и Traefik'
+date: '2024-11-23'
+lastmod: '2024-11-23'
+tags: ['docker', 'homelab', 'crowdsec', 'traefik', 'security']
+summary: 'Настройка Crowdsec Bouncer и Traefik Plugin'
+images: ['/static/images/blog/crowdsec-traefik/banner.png']
+authors: ['default']
+---
+
+[CrowdSec](https://www.crowdsec.net/) — это бесплатный, современный и совместный механизм обнаружения угроз, связанный с глобальной сетью репутации IP-адресов. Он основан на философии fail2ban, но совместим с IPv6 и в 60 раз быстрее, так как написан на Go.
+CrowdSec разработан для современных инфраструктур на основе облака / контейнеров / виртуальных машин. После обнаружения вы можете устранить угрозы с помощью различных баунсеров (блокировка брандмауэра, nginx http 403, Captcha и т. д.), в то время как агрессивный IP-адрес может быть отправлен в CrowdSec для курирования, прежде чем будет распространен среди всех пользователей для дальнейшего повышения безопасности каждого.
+
+![](/static/images/blog/crowdsec-traefik/file-20241012133356288.png)
+
+Crowdsec состоит из 3 компонентов:
+
+- Local API (LAPI)
+- CSCLI - консоль управления
+- Bouncer (вышибала)
+
+В этой заметке будет показан пример использования вместе с [Traefik](/blog/traefik-obratniy-proksy-dlya-docker-konteynerov)
+
+## 1. Запуск Crowdsec
+
+Запускать Crowdsec будем в docker-контейнере, для этого создадим файл со следующим содержимым:
+
+```yaml:docker-compose.yaml
+---
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+    environment:
+      GID: "${GID-1000}"
+      COLLECTIONS: "crowdsecurity/linux crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules"
+      TZ: Europe/Moscow
+    volumes:
+      - ./acquis.yaml:/etc/crowdsec/acquis.yaml
+      - ./db:/var/lib/crowdsec/data/
+      - ./config:/etc/crowdsec/
+      - /home/<user>/traefik/logs:/var/log/traefik/:ro
+    networks:
+      - proxy
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+```
+
+После этого создаем файл конфигурации `acquis.yaml`:
+
+```yaml:acquis.yaml
+filenames:
+  - /var/log/traefik/*
+labels:
+  type: traefik
+
+---
+
+listen_addr: 0.0.0.0:7422
+appsec_config: crowdsecurity/virtual-patching
+name: myAppSecComponent
+source: appsec
+labels:
+  type: appsec
+```
+
+Теперь можем запускать контейнер
+
+```bash
+docker compose up -d
+```
+
+## 2. Подключаем плагин в Traefik
+
+В качестве вышибалы будем использовать плагин [Crowdsec Bouncer Traefik plugin](https://plugins.traefik.io/plugins/6335346ca4caa9ddeffda116/crowdsec-bouncer-traefik-plugin). Для подключения, откроем файл статической конфигурации **Traefik** и добавим в конец следующие строки:
+
+```yaml:traefik.yaml
+experimental:
+  plugins:
+    crowdsec-bouncer-traefik-plugin:
+      moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      version: "v1.3.5"
+```
+
+Перезапускаем контейнер на всякий случай с флагом пересоздания:
+
+```bash
+docker compose up -d --force-recreate
+```
+
+Проверяем что плагин загрузился в `/log/traefik.log`
+
+```
+2024-10-11T17:51:26+03:00 INF Loading plugins... plugins=["crowdsec-bouncer-traefik-plugin"]
+2024-10-11T17:51:26+03:00 INF Plugins loaded. plugins=["crowdsec-bouncer-traefik-plugin"]
+```
+
+Проверяем что Crowdsec получает метрики из Traefik:
+
+```bash
+docker exec crowdsec cscli metrics
+```
+
+![](/static/images/blog/crowdsec-traefik/file-20241012022127763.png)
+
+> [!note]
+> Чтобы crowdsec смог считать логи из traefik, сначала должен быть запущен контейнер crowdsec
+
+## 3. Подключаем Bouncer:
+
+Для подключение баунсера необходимо получить LAPI-key, для этого используем команду:
+
+```bash
+docker exec crowdsec cscli bouncers add crowdsecBouncer
+```
+
+Копируем и сохраняем полученный ключ.
+
+Создаем файл динамической конфигурации traefik `crowdsec.yml`
+
+```yml:crowdsec.yml {17} showLineNumbers
+http:
+  middlewares:
+    crowdsec:
+      plugin:
+        crowdsec-bouncer-traefik-plugin:
+          enabled: true
+          logLevel: INFO
+          updateIntervalSeconds: 15
+          updateMaxFailure: 0
+          defaultDecisionSeconds: 15
+          httpTimeoutSeconds: 10
+          crowdsecMode: stream
+          crowdsecAppsecEnabled: true
+          crowdsecAppsecHost: crowdsec:7422
+          crowdsecAppsecFailureBlock: true
+          crowdsecAppsecUnreachableBlock: true
+          crowdsecLapiKey: your-lapi-key  # Replace CrowdSec API key (docker exec crowdsec cscli bouncers add crowdsecBouncer)
+          # crowdsecLapiKeyFile: /etc/traefik/cs-privateKey-foo
+          crowdsecLapiHost: crowdsec:8080
+          crowdsecLapiScheme: http
+          forwardedHeadersTrustedIPs:
+            - 172.18.0.0/24 # Reverse Proxy IP address
+          clientTrustedIPs:
+            - 192.168.78.0/24
+```
+
+Вставляем полученный `lapi-key` в строку `crowdsecLapiKey`, а в `clientTrustedIPs` указываем нашу локальную подсеть.
+
+Теперь открываем файл статической конфигурации `traefik.yml` и добавляем в промежуточный слой - `crowdsec@file`
+
+```yml:traefik.yml
+api:
+  dashboard: true
+  debug: true
+entryPoints:
+  http:
+    address: ":80"
+    http:
+      middlewares:
+        - "crowdsec@file"
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+  https:
+    address: ":443"
+    http:
+      middlewares:
+        - "crowdsec@file"
+
+serversTransport:
+  insecureSkipVerify: true
+providers:
+  file:
+    directory: /config
+    watch: true
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: your-email@mail.com #add your email
+      storage: acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+log:
+  level: "INFO"
+  filePath: "/var/log/traefik/traefik.log"
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+```
+
+Перезапускаем **Traefik**:
+
+```bash
+docker compose up -d
+```
+
+## 4. Автоматическое обновление баз Crowdsec
+
+Для лучшей защиты нам необходимо получать постоянные обновления баз Crowdsec.
+Чтобы настроить автоматическое обновление баз Crowdsec, воспользуемся `cron`
+
+```bash
+crontab -e
+```
+
+![](/static/images/blog/crowdsec-traefik/file-20241012024917154.png)
+
+Выбираем пункт 1 и вставляем в конец файла строку:
+
+```bash
+* 3 * * * docker exec crowdsec cscli hub update && docker exec crowdsec cscli hub upgrade
+```
+
+![](/static/images/blog/crowdsec-traefik/file-20241012025303075.png)
+Это означает что локальные базы crowdsec будут обновляться каждые 3 часа.
+
+## 5. Подключение дашборда
+
+Для визуализации и алертов, Crowdsec предлагает свой онлайн панель управления. Чтоб подключить ее переходим на [https://app.crowdsec.net/sign-in](https://app.crowdsec.net/sign-in) и создаем аккаунт. После входа в аккаунт нам предложат подключить наш Crowdsec Engine и дадут готовую команду для этого:
+
+![](/static/images/blog/crowdsec-traefik/file-2024-10-17-01-21-25.png)
+
+Но так как у нас Crowdsec запущен в docker-контейнере, мы ее немного изменим:
+
+```bash
+docker exec crowdsec cscli console enroll -e context cm24-----------------kzbi
+```
+
+![](/static/images/blog/crowdsec-traefik/file-20241012030153025.png)
+
+Возвращаемся а личный кабинет и нажимаем `Accept enroll`
+
+![](/static/images/blog/crowdsec-traefik/file-2024-10-12-03-02-38.png)
+
+После этого внизу появится панелька:
+
+![](/static/images/blog/crowdsec-traefik/file-20241012030604536.png)
+
+Чтобы отобразились алерты надо перезапустить контейнер crowdsec.
+
+## 6. Прогрессивное увеличение времени бана для Crowdsec
+
+Для динамического увеличения продолжительности бана угрозы обнажаемой crowdsek необходимо изменить в файле `/crowdsek/config/profiles.yaml` строку параметра:
+
+```shell
+duration_expr: "Sprintf('%dh', (GetDecisionsCount(Alert.GetValue()) + 1) * 8)"
+```
+
+означает следующее:
+
+- `GetDecisionsCount(Alert.GetValue())` — это функция, которая возвращает количество предыдущих решений (банов) для данного источника (например, IP-адреса).
+- `+ 1` — добавляет 1 к количеству предыдущих решений, чтобы учитывать текущее решение.
+- `* 8` — умножает общее количество решений на 8, что означает, что время бана будет увеличиваться на 8 часа за каждое предыдущее решение.
+- `Sprintf('%dh', ...)` — форматирует результат в строку, представляющую количество часов.
+
+Подробнее в документации: [Format | CrowdSec](https://docs.crowdsec.net/docs/next/profiles/format/#duration_expr)
+
+## 7. Команды crowdsec cscli
+
+Для получения статуса системы:
+
+```bash
+docker exec crowdsec cscli metrics
+```
+
+Список заблокированных
+
+```bash
+docker exec crowdsec cscli decisions list
+```
+
+Ручная блокировка по IP
+
+```bash
+docker exec crowdsec cscli decisions add --ip <ip>
+```
+
+Снятие блокировки
+
+```bash
+docker exec crowdsec cscli decisions delete --ip <ip>
+```
+
+Обновление базы данных выполняется командами:
+
+```bash
+docker exec crowdsec cscli hub update && docker exec crowdsec cscli hub upgrade
+```
+
+## Заключение
+
+Мы настроили защиту нашего сервера с помощью Crowdsec и плагина-баунсера для Traefik. Настроили автоматическое обновление баз и подключили онлайн панель управления.
+
+Спустя какое-то время зайдя в дашборд вы убедитесь в необходимости Crowdsec.
+
+![](/static/images/blog/crowdsec-traefik/file-20241017015847941.png)
