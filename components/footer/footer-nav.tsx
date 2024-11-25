@@ -11,7 +11,7 @@ export function FooterNav() {
         <div className="flex h-11 items-center font-semibold md:justify-end">
           <span>Карта сайта</span>
         </div>
-        <ul className="flex gap-4 md:flex-col md:gap-3">
+        <ul className="flex gap-2 md:flex-col md:gap-3">
           {FOOTER_NAV_LINKS.map((link, idx) => (
             <Fragment key={link.title}>
               <li>
@@ -24,7 +24,6 @@ export function FooterNav() {
           ))}
         </ul>
       </div>
-
     </div>
   )
 }
