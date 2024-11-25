@@ -51,7 +51,7 @@ export default function TagPage({ params }: { params: { tag: string } }) {
       title={title}
       description={
         <>
-          Things I've written about <span className="ml-2 font-medium">#{tag}</span>
+          Найдено по тегу <span className="ml-2 font-medium">#{tag}</span>
         </>
       }
       posts={filteredPosts}
