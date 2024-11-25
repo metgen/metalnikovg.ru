@@ -1,7 +1,7 @@
 export const SITE_METADATA = {
   title: `metalnikovg.ru - Цифрофой сад | Блог`,
   author: 'Метальников Геннадий',
-  headerTitle: `Цифрофой сад`,
+  headerTitle: `metalnikovg.ru`,
   description: 'Заметки по IT тематике',
   language: 'ru-ru',
   theme: 'system', // system, dark or light
