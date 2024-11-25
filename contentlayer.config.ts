@@ -23,7 +23,7 @@ import rehypeCitation from 'rehype-citation'
 import rehypePresetMinify from 'rehype-preset-minify'
 import rehypePrismPlus from 'rehype-prism-plus'
 import { SITE_METADATA } from './data/site-metadata'
-import { extractTocHeadings } from './server/remark-toc-headings.server'
+import { extractTocHeadings } from './utils/remark-toc-headings'
 
 let root = process.cwd()
 let isProduction = process.env.NODE_ENV === 'production'
