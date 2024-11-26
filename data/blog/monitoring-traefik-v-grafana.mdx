@@ -1,0 +1,151 @@
+---
+title: 'Мониторинг Traefik в Grafana'
+date: '2024-11-26'
+lastmod: '2024-11-26'
+tags: ['traefik', 'grafana', 'monitoring']
+summary: 'Мониторинг Traefik с помощью Prometheus в Grafana'
+images: ['/static/images/blog/mon-tf/banner.png']
+authors: ['default']
+---
+
+[Traefik](/blog/traefik-obratniy-proksy-dlya-docker-konteynerov) - из коробки поддерживает публикацию метрик в формате prometheus. Более подробно с настройками можно ознакомиться в документации: [Traefik Prometheus Documentation - Traefik](https://doc.traefik.io/traefik/observability/metrics/prometheus/). В метриках доступна основная информация по работе обратного прокси. Для мониторинга будем использовать уже готовый [стек-мониторинга](/blog/monitoring-routera-mikrotik-pri-pomoshchi-prometheus-i-grafana).
+
+## Настройка Traefik
+
+В первую очередь необходимо внести изменения в файл статической конфигурации `traefik.yml`. Выбираем любой свободный порт для публикации метрик.
+
+```yml
+#Добавления точки публикации данных
+entryPoints:
+  metrics:
+    address: ':8082'
+
+#Включение публикации метрик
+metrics:
+  prometheus:
+    entryPoint: metrics
+```
+
+Пример:
+
+```yml:traefik.yml
+api:
+  dashboard: true
+  debug: true
+entryPoints:
+  http:
+    address: ":80"
+    http:
+      middlewares:
+        - "crowdsec@file"
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+  https:
+    address: ":443"
+    http:
+      middlewares:
+        - "crowdsec@file"
+  metrics:
+    address: ":8082"
+
+serversTransport:
+  insecureSkipVerify: true
+providers:
+  file:
+    directory: /config
+    watch: true
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: your-email@mail.com #add your email
+      storage: acme.json
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+log:
+  level: "INFO"
+  filePath: "/var/log/traefik/traefik.log"
+accessLog:
+  filePath: "/var/log/traefik/access.log"
+
+experimental:
+  plugins:
+    crowdsec-bouncer-traefik-plugin:
+      moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      version: "v1.3.4-beta1"
+
+```
+
+Далее нужно внести изменения в `docker-compose` файл добавив проброс порта публикации метрик из контейнера docker.
+
+```yml
+ports:
+  - 8082:8082
+```
+
+Пример:
+
+```yaml:docker-compose.yaml
+version: "3.8"
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+      - 8082:8082
+    environment:
+      - CF_API_EMAIL=youremail@gmail.com
+      - CF_DNS_API_TOKEN=cf_api_token
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - ./acme.json:/acme.json
+      - ./config:/config:ro
+      - ./logs:/var/log/traefik
+networks:
+  proxy:
+    name: proxy
+    external: true
+```
+
+## Настройка Prometheus
+
+Добавить в конфигурационный файл `prometheus.yml` новую задачу сбора данных:
+
+```yml
+- job_name: 'traefik'
+    scrape_interval: 30s
+    scheme: http
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['192.168.78.110:8082']
+```
+
+## Мониторинг в Grafana
+
+Для мониторинга в Grafana будет использоваться официальный дашборд Traefik - [Traefik Official Standalone Dashboard | Grafana Labs](https://grafana.com/grafana/dashboards/17346-traefik-official-standalone-dashboard/)
+
+![](/static/images/blog/mon-tf/file-20241017160036709.png)
+
+## Итог
+
+Мы настроили мониторинг нашего обратного прокси Traefik с помощью Prometheus и Grafana.

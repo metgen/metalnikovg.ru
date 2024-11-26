@@ -1,0 +1,51 @@
+---
+title: 'Мониторинг Adguard в Grafana'
+date: '2024-11-26'
+lastmod: '2024-11-26'
+tags: ['adguard', 'grafana', 'monitoring']
+summary: 'Мониторинг Adguard Home c помощью Prometheus Exporter в Grafana'
+images: ['/static/images/blog/mon-agh/banner.png']
+authors: ['default']
+---
+
+Adguard Home не имеет полноценного мониторинга, но есть возможность получения данных об установке через api. Для получения данных и конвертации их в представление для Prometheus можно использовать экспортер конвертер.
+
+Репозиторий: [GitHub - henrywhitaker3/adguard-exporter](https://github.com/henrywhitaker3/adguard-exporter)
+
+## Настройка экспортера
+
+Можно использовать файл docker compose из [заметки](/blog/adguard-home-dns-server-dlya-doma) и добавить в него следующие строки:
+
+```yaml
+services:
+  adguard-ertxpoer:
+    container_name: adguard-ertxpoer
+    environment:
+      - ADGUARD_SERVERS=http://<adguard_ip>:<port>
+      - ADGUARD_USERNAMES=username
+      - ADGUARD_PASSWORDS=password
+    ports:
+      - 9618:9618
+    image: ghcr.io/henrywhitaker3/adguard-exporter:latest
+```
+
+Параметры `ADGUARD_USERNAMES` и `ADGUARD_PASSWORDS` обязательные для запуска. Если авторизация не используется в установке Adguard Home то значения могут быть любыми. В `ADGUARD_SERVERS` указываем протокол, IP адрес Adguard Home и порт доступа к веб интерфейсу.
+
+## Настройка Prometheus
+
+Можно использовать [стек мониторинга](/blog/monitoring-routera-mikrotik-pri-pomoshchi-prometheus-i-grafana) или добавить в конфигурационный файл `prometheus.yml` новую задачу сбора данных:
+
+```yaml
+#Adguard
+- job_name: 'adguard'
+  static_configs:
+    - targets: ['<adguard-exporter-ip>:9618']
+```
+
+Адрес указывает на экспортер а не на конкретную установку Adguard. В данном случае если экспортер развернут в одном стеке с Adguard Home, адрес будет такой же как у последнего.
+
+## Мониторинг в Grafana
+
+Можно использовать следующий дашборд для [AdGuard Home Exporter | Grafana Labs](https://grafana.com/grafana/dashboards/20799-adguard-home-exporter/)
+
+![agh_dashboard](/static/images/blog/mon-agh/file-20241008021853913.png)

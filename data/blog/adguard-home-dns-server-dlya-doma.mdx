@@ -2,12 +2,9 @@
 title: 'Adguard Home - DNS сервер для дома'
 date: '2024-06-30'
 lastmod: '2024-06-30'
-tags: ['docker', 'homelab', 'networks', 'dns']
+tags: ['docker', 'homelab', 'networks', 'dns', 'adguard']
 summary: 'Простая установка и настройка домашнего DNS сервера с блокировкой рекламы'
-images:
-  [
-    '/static/images/blog/agh/banner.png',
-  ]
+images: ['/static/images/blog/agh/banner.png']
 authors: ['default']
 ---
 
@@ -41,7 +38,7 @@ sudo reboot
 
 Настройка docker-compose.yaml
 
-На официальной странице Adguard Home на [docker-hub](https://hub.docker.com/r/adguard/adguardhome) приведен пример кода с docker run, но в целях удобства будем использовать docker-compose файл для запуска контейнера. 
+На официальной странице Adguard Home на [docker-hub](https://hub.docker.com/r/adguard/adguardhome) приведен пример кода с docker run, но в целях удобства будем использовать docker-compose файл для запуска контейнера.
 
 ```yaml:docker-compose.yml
 version: "3.8"
@@ -95,6 +92,7 @@ services:
 ```bash
 sudo lsof -i :53
 ```
+
 ![agh_check_p53](/static/images/blog/agh/agh_check_p53.png)
 
 Видим, что 53 порт занят systemd-resolve
@@ -148,7 +146,6 @@ docker compose up -d
 - `https://schakal.ru/hosts/alive_hosts_ru_com.txt`
 
 - `https://schakal.ru/hosts/hosts_mail_fb.txt`
-
 
 Больше списков можно найти на [4PDA](https://4pda.to/forum/index.php?showtopic=275091&st=8000#entry89665467)
 
