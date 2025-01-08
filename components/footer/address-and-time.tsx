@@ -17,8 +17,8 @@ function getTime() {
     hoursDiff === 0
       ? 'то же время'
       : hoursDiff > 0
-        ? `${hoursDiff}ч. вперед`
-        : `${hoursDiff * -1}ч. назад`
+        ? `плюс ${hoursDiff} часа`
+        : `минус ${hoursDiff * -1} часа`
 
   let time = new Intl.DateTimeFormat('ru-RU', {
     timeZone: MY_TIMEZONE,
