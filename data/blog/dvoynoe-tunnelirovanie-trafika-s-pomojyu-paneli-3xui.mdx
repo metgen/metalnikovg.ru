@@ -1,0 +1,359 @@
+---
+title: 'Двойное туннелирование трафика с помощью панели 3X-UI'
+date: '2025-01-08'
+lastmod: '2025-01-08'
+tags: ['vpn', 'proxy', 'network', 'wireguard', 'vless']
+summary: 'Настройка двойного VPN с помощью панели 3X-UI'
+images: ['/static/images/blog/double-vpn/banner.png']
+authors: ['default']
+---
+
+## Введение
+
+Двойной VPN (Double VPN) - это технология, которая позволяет создать цепочку из двух серверов, которые могут быть соединены между собой VPN или Proxy протоколами.
+
+В данном примере эта технология будет использоваться для подключения Mikrotik по proxy протоколу VLESS, т.к. RouterOS на данный момент не поддерживает этот протокол.
+
+Для её реализации нам понадобится два сервера:
+
+1. Промежуточный сервер к которому Mikrotik будет подключаться по протоколу Wireguard. Это может быть как сервер внутри локальной сети так и за её пределами.
+2. Конечный сервер. Сервер за пределами локальной сети, через который мы будем выходить в интернет и который будет подключен к промежуточному серверу по протоколу VLESS.
+
+## Подготовка серверов
+
+> [!note]
+> Следующие действия необходимо выполнить на обоих серверах
+
+### Обновляем сервер
+
+```bash
+apt update && apt upgrade -y
+```
+
+### Устанавливаем Docker
+
+```bash
+bash <(curl -sSL https://get.docker.com)
+```
+
+### Клонируем репозиторий панели 3X-UI и переходим в его директорию
+
+```bash
+git clone https://github.com/MHSanaei/3x-ui.git
+cd 3x-ui
+```
+
+### Запускаем контейнер
+
+```bash
+docker compose up -d
+```
+
+![](/static/images/blog/double-vpn/image-1.png)
+
+После запуска контейнера, панель будет доступна по IP адресу вашего сервера на порту `2053`. Преходим на `http://$YOUR_IP:2053`
+
+### Меняем логин и пароль
+
+Для входа в панель используйте логин `admin` и пароль `admin`
+
+![](/static/images/blog/double-vpn/image-9.png)
+
+После входа нас встречает дашбор панели:
+
+![](/static/images/blog/double-vpn/image-22.png)
+
+Сразу переходим в **настройки панели** -> **настройки безопасности** и меняем логин с паролем:
+
+![](/static/images/blog/double-vpn/image-2.png)
+
+### Меняем адрес панели и страницы подписок
+
+Для безопасности также рекомендуется изменить дефолтный адрес панели и страницы подписок (если планируете использовать)
+
+![](/static/images/blog/double-vpn/image-20.png)
+![](/static/images/blog/double-vpn/image-21.png)
+
+Теперь желательно защитить панель протоколом `https`. Для этого будем использовать домен управляемый Cloudflare и обратный прокси-сервер `Caddy`.
+
+> [!note]
+> Если не хочется использовать Caddy, так как он будет занимать `443` порт, можно выпустить сертификаты использую Certbot с плагином `Cloudflare DNS`
+
+### Устанавливаем и настраиваем Caddy
+
+Переходим в домашний каталог:
+
+```bash
+cd ~/
+```
+
+Создаем директорию и переходим в нее:
+
+```bash
+mkdir caddy && cd caddy
+```
+
+Создаем файл docker-compose:
+
+```bash
+nano docker-compose.yaml
+```
+
+со следующим содержимым:
+
+```yaml:docker-compose.yaml
+services:
+  caddy:
+    image: ghcr.io/deniom3/caddy-cloudflare-transform:latest
+    container_name: caddy
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      ACME_AGREE: true
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      CLOUDFLARE_EMAIL: ${CLOUDFLARE_EMAIL}
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./data:/data
+      - ./config:/config
+      - ./logs:/logs
+      - ./Caddyfile:/etc/caddy/Caddyfile
+	extra_hosts:
+      - "host.docker.internal:host-gateway"
+```
+
+> [!note]
+> Забегая немного вперед, так как панель 3X-UI может работать только в режиме хоста, то caddy запущенный в docker контейнере не сможет обратиться к панели напрямую по адресу и порту. Для решения этой проблемы мы можем использовать caddy без докера или использовать следующий костыль.
+>
+> В docker-compose есть опция - [extra_hosts](https://docs.docker.com/reference/compose-file/build/). Она создает соответствующую запись с IP-адресом и именем хоста в сетевой конфигурации контейнера и добавляет запись в `/etc/hosts`. Так же, у docker демона есть строка `host-gateway` которая задается при [запуске](https://docs.docker.com/engine/reference/commandline/dockerd/), но по умолчанию, она указывает IP адрес бриджа. Если скомбинировать эти опции, они дадут доступ контейнеру внутрь хоста. После этого хост будет доступен по адресу `host.docker.internal`
+
+Создаем файл переменных:
+
+```bash
+nano .env
+```
+
+Указываем в нем ваш токен, email и домен:
+
+```
+CLOUDFLARE_API_TOKEN=''
+CLOUDFLARE_EMAIL=''
+DOMAIN='example.com'
+```
+
+Создаем Caddyfile:
+
+```bash
+nano Caddyfile
+```
+
+В нем нужно заменить `3x-ui` на субдомен который вы создали для панели
+
+````
+
+```yaml
+(common) {
+        header /* {
+        -Server
+        }
+}
+
+(cloudflare) {
+        import common
+        tls {
+                dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        }
+}
+
+{
+        log access-log {
+                include http.log.access
+                output file /logs/access.log {
+                  roll_keep_for 48h
+                }
+                format transform `{ts} {request>headers>X-Forwarded-For>[0]:request>remote_ip} {request>host} {request>method} {request>uri} {status}` {
+                        time_format "02/Jan/2006:15:04:05"
+                }
+        }
+}
+
+3x-ui.{env.DOMAIN} {
+        import cloudflare
+
+        log
+
+        @allowed path /dash* /server* /sub*
+
+        handle @allowed {
+                reverse_proxy host.docker.internal:2053 {
+                        header_up Host {host}
+                        header_up X-Real-IP {remote}
+                        header_up X-Forwarded-For {remote}
+                        header_up X-Forwarded-Proto {scheme}
+                }
+        }
+
+        handle {
+		        respond "403 Get the FUCK OUT!" 403
+        }
+}
+
+````
+
+В нем разрешен доступ только к следующим путям панели: `/dash*`, `/server*`, `/sub*`. При открытии адреса панели без указания нужного пути, пользователь получит в ответ `403 Get the FUCK OUT!`.
+
+> [!note]
+> При внесении изменений в `Caddyfile` необходимо перезагрузить caddy
+
+```bash
+docker compose restart
+```
+
+## Настройка промежуточного сервера
+
+Переходим по адресу: `https://middle.your_domain.ru/dash`. Затем переходим в раздел подключения и нажимаем добавить подключение.
+
+![](/static/images/blog/double-vpn/image-10.png)
+
+Выбираем протокол Wireguard:
+
+![](/static/images/blog/double-vpn/image-3.png)
+
+> [!caution]
+> Для корректной маршрутизации обязательно включить Sniffing.
+
+![](/static/images/blog/double-vpn/image-23.png)
+
+Нажимаем три точки на созданное подключение и переходим в **Информация**
+
+![](/static/images/blog/double-vpn/image-4.png)
+
+Здесь будет готовый файл конфигурации для подключения Wireguard, можно скопировать его и сохранить в текстовый файл с расширением `.conf`
+
+![](/static/images/blog/double-vpn/image-5.png)
+
+## Настройка конечного сервера
+
+Переходим по адресу: `https://endpoint.your_domain.ru/dash` и создаем подключение по протоколу VLESS-Reality на порту `8443`. Поле **примечание** заполняем на свой вкус.
+
+Дальше необходимо найти сайт, под который мы будем маскироваться. Это должен быть не заблокированный по домену иностранный ресурс, поддерживающий подключения по TLSv1.3 и HTTP/2, имеющий заглавную страницу, которая не переадресовывает на другой домен. Если совсем заморочиться, то лучше если бы IP-адрес этого ресурса был из того же диапазона что и ваш сервер, и чтобы сервер поддерживал Online Certificate Status Protocol (OCSP).
+
+Найти такой ресурс можно с помощью инструмента [XTLS/RealiTLScanner](https://github.com/XTLS/RealiTLScanner). Скачиваете его под Windows/Linux со страницы [Releases](https://github.com/XTLS/RealiTLScanner/releases/), или собираете сами (go build).
+
+Делаем файл исполняемым:
+
+```bash
+chmod +x RealiTLScanner
+```
+
+Запускаем:
+
+```bash
+./RealiTLScanner -addr IP_адрес_VPS
+```
+
+Если нет желания заморачиваться, то можно выбрать что нибудь простое, например: `telegram.org:443`, `www.amd.com:443` и т.д.
+
+![](/static/images/blog/double-vpn/image-11.png)
+
+Включаем Sniffing:
+
+![](/static/images/blog/double-vpn/image-12.png)
+
+Открываем QR-код для подключения:
+
+![](/static/images/blog/double-vpn/image-13.png)
+
+Кликаем на QR-код, для копирования подключения в буфер обмена.
+
+![](/static/images/blog/double-vpn/image-14.png)
+
+## Настраиваем Outbound на промежуточном сервере.
+
+Переходим в **Настройки Xray -> Исходящие** и нажимаем **Добавить исходящий**
+
+![](/static/images/blog/double-vpn/image-15.png)
+
+Переходим на вкладку **JSON**, вставляем в поле **Link** скопированную ранее ссылку на подключение и нажимаем на кнопку рядом с полем справа. После этого наша ссылка на подключение конвертируется в JSON код. Чтобы сохранить Outbound нажимаем внизу кнопку **Добавить исходящий**.
+
+![](/static/images/blog/double-vpn/image-16.png)
+
+После этого должен появиться наш Outbound:
+
+![](/static/images/blog/double-vpn/image-17.png)
+
+Переходим в **Правила Маршрутизации** и нажимаем кнопку добавить правило
+
+![](/static/images/blog/double-vpn/image-18.png)
+
+В выпадающем списке **Inbound Tags** выбираем наш Inbound, а в **Outbound Tags** выбираем наш Outbound и нажимаем кнопку **Добавить правило**
+
+![](/static/images/blog/double-vpn/image-19.png)
+
+Нажимаем кнопку **Сохранить настройки**, а затем **Перезапустить Xray** чтобы настройки ядра Xray вступили в силу.
+
+![](/static/images/blog/double-vpn/image-25.png)
+
+![](/static/images/blog/double-vpn/image-24.png)
+
+Теперь все подключения по данному Inbound будут улетать на заданный Outbound.
+
+## Маршрутизация по geosite и geoip
+
+Для того чтобы разделить зарубежный и внутренний трафик, нужно настроить роутинг по geosite и geoip.
+
+Переходим в Переходим в **Настройки Xray -> Расширенный шаблон**. И вставляем следующий кусочек JSON кода:
+
+```json
+      {
+        "type": "field",
+        "outboundTag": "direct",
+        "ip": [
+          "geoip:ru"
+        ]
+      },
+      {
+        "type": "field",
+        "outboundTag": "direct",
+        "domain": [
+          "geosite:category-gov-ru",
+          "regexp:.*\\.ru$"
+        ]
+      },
+```
+
+Должно получиться примерно так:
+
+![](/static/images/blog/double-vpn/image.png)
+
+Перейдя в правила маршрутизации, видим, что у нас добавилось новое правило.
+
+![](/static/images/blog/double-vpn/image-26.png)
+
+Теперь на внутренние ресурсы вы будете заходить через WireGuard с промежуточного сервера, а на зарубежные ресурсы, через конечный сервер.
+
+## Подключение Mikrotik
+
+Открываем файл конфигурации Wireguard с промежуточного сервера.
+
+Создаем новый виртуальный интерфейс Wireguard, указываем MTU, порт и приватный ключ нашего интерфейса. Публичный ключ сгенерируется автоматически.
+
+![](/static/images/blog/double-vpn/image-6.png)
+
+Создаем пир, указываем в нем адрес и порт нашего интерфейса. А так же разрешенные адреса, публичный и общий ключ для нашего пира.
+
+![](/static/images/blog/double-vpn/image-7.png)
+
+Назначим созданному интерфейсу адрес и сеть:
+
+![](/static/images/blog/double-vpn/image-8.png)
+
+Более подробно по настройке Wireguard на RouterOS можно прочитать в [[Точечная маршрутизация на Mikrotik|этой]] заметке.
+
+## Заключение
+
+Мы настроили двойной VPN с помощью панели 3X-UI, а также подключили к нему Mikrotik.
