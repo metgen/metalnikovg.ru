@@ -1,11 +1,11 @@
-import { type TagIconType } from '~/components/ui/tagicon';
+import { type TagIconType } from '~/components/ui/tagicon'
 
 type PopularTag = {
-  href: string;
-  iconType: TagIconType;
-  slug: string;
-  title: string;
-};
+  href: string
+  iconType: TagIconType
+  slug: string
+  title: string
+}
 
 const popularTags: PopularTag[] = [
   {
@@ -39,11 +39,11 @@ const popularTags: PopularTag[] = [
     title: 'Homelab',
   },
   {
-    href: '/tags/network',
-    iconType: 'Network',
-    slug: 'network',
-    title: 'Network',
+    href: '/tags/grafana',
+    iconType: 'Grafana',
+    slug: 'grafana',
+    title: 'Grafana',
   },
-];
+]
 
-export default popularTags;
+export default popularTags

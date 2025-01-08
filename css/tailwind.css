@@ -92,7 +92,7 @@ samp {
 }
 
 .popular-tags .linux {
-  @apply bg-amber-500;
+  @apply bg-amber-600;
 }
 
 .popular-tags .powershell {
@@ -121,5 +121,9 @@ samp {
 
 .popular-tags .mikrotik {
   @apply bg-gray-800;
+}
+
+.popular-tags .grafana {
+  @apply bg-orange-600;
 }
 /* END: CSS popular tags */
