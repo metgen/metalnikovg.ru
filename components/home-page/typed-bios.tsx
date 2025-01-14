@@ -41,22 +41,14 @@ export function TypedBios() {
       ])}
     >
       <ul id="bios" className="hidden">
-        <li>
-          Привет! <Twemoji emoji="waving-hand" size="base" /> Меня зовут{' '}
-          <b className="font-medium">Геннадий.</b>
-        </li>
-        <li>
-          Я работаю в сефре IT. <Twemoji emoji="desktop-computer" size="base" />
-        </li>
-        <li>
-          Мне нравится учиться и получать новые знания в этой области. <Twemoji emoji="books" />
-        </li>
-        <li>
-          Веду личную базу знаний в Obsidian <Twemoji emoji="gem-stone" />
-        </li>
-        <li>
-          Делаю полезные заметки для себя, и публикую их здесь. <Twemoji emoji="scroll" />
-        </li>
+        <li>Linux</li>
+        <li>Windows</li>
+        <li>Android</li>
+        <li>Docker</li>
+        <li>Селф хостингу</li>
+        <li>Виртуализации</li>
+        <li>Сетям</li>
+        <li>Мониторингу</li>
       </ul>
       <span ref={el} className="text-neutral-900 dark:text-neutral-200" />
     </div>
