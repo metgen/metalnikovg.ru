@@ -15,7 +15,7 @@ export function Logo({ className }: { className?: string }) {
         loading="eager"
       />
       <div className="duration-00 group ml-2 text-xl font-bold transition">
-        metalnikovg.ru
+        MetalnikovG.ru
         <span className="block h-0.5 max-w-0 bg-black transition-all duration-500 group-hover:max-w-[85%] dark:bg-white"></span>
       </div>
     </Link>
