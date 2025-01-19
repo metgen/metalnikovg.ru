@@ -8,7 +8,10 @@ import { SITE_METADATA } from '~/data/site-metadata'
 import tagData from '~/json/tag-data.json'
 import { ListLayoutWithTags } from '~/layouts/list-layout-with-tags'
 
-export async function generateMetadata({ params }: { params: { tag: string } }): Promise<Metadata> {
+export async function generateMetadata(props: {
+  params: Promise<{ tag: string }>
+}): Promise<Metadata> {
+  let params = await props.params
   let tag = decodeURI(params.tag)
   return genPageMetadata({
     title: tag,
@@ -31,7 +34,8 @@ export let generateStaticParams = async () => {
   return paths
 }
 
-export default function TagPage({ params }: { params: { tag: string } }) {
+export default async function TagPage(props: { params: Promise<{ tag: string }> }) {
+  let params = await props.params
   let tag = decodeURI(params.tag)
   // Capitalize first letter and convert space to dash
   let title = '#' + tag[0] + tag.split(' ').join('-').slice(1)
