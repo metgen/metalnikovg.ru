@@ -71,7 +71,6 @@ export function MobileNav() {
             <DialogPanel className="fixed left-0 top-0 z-70 h-full w-full bg-white opacity-95 duration-300 dark:bg-gray-950 dark:opacity-[0.98]">
               <div className="flex items-center gap-3 pl-10 pt-8">
                 <Logo />
-                <span className="font-medium">{SITE_METADATA.headerTitle}</span>
               </div>
               <nav
                 ref={navRef}
