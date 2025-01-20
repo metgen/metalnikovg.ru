@@ -55,7 +55,6 @@
     "remark-gfm": "^4.0.0",
     "remark-github-blockquote-alert": "^1.2.1",
     "remark-math": "^6.0.0",
-    "supports-color": "^10.0.0",
     "swr": "^2.2.5",
     "tailwindcss": "^3.4.3",
     "typed.js": "^2.1.0",
