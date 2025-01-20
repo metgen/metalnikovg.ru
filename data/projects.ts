@@ -4,8 +4,7 @@ export const PROJECTS: Project[] = [
   {
     type: 'work',
     title: 'Персональный веб-сайт',
-    description:
-      'Цифровой сад',
+    description: 'Заметки по IT тематике',
     imgSrc: '/static/images/projects/site_screen.png',
     repo: 'metgen/metalnikovg.ru',
     // url: 'https://www.metalnikovg.ru/', //
@@ -14,8 +13,7 @@ export const PROJECTS: Project[] = [
   {
     type: 'work',
     title: 'EXIF-галерея',
-    description:
-      'Галлерея',
+    description: 'Галлерея',
     imgSrc: '/static/images/projects/gallery.png',
     repo: 'metgen/exif-gallery',
     builtWith: ['Vercel', 'GitHub', 'Typescript', 'Cloudflare'],
@@ -23,11 +21,9 @@ export const PROJECTS: Project[] = [
   {
     type: 'work',
     title: 'MKT-monitoring',
-    description:
-      'Мониторинг роутеров Mikrotik',
+    description: 'Мониторинг устройств Mikrotik',
     imgSrc: '/static/images/projects/mkt-monitoring.png',
     repo: 'metgen/mkt_monitoring',
-    builtWith: ['Grafana', 'Prometheus', 'Nginx', 'Docker'],
+    builtWith: ['Grafana', 'Prometheus', 'Docker'],
   },
-
 ]

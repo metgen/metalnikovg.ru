@@ -21,7 +21,7 @@ export default async function Projects() {
     <Container className="pt-4 lg:pt-12">
       <PageHeader
         title="Проекты"
-        description="Мои проекты"
+        description="Open-source проекты"
         className="border-b border-gray-200 dark:border-gray-700"
       />
       <div className="py-5 md:py-10">
