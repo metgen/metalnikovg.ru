@@ -78,7 +78,7 @@ export function ProjectCard({
             aria-label={`Link to ${title}`}
           >
             <GrowingUnderline data-umami-event="project-learn-more">
-              Learn more &rarr;
+              Узнать больше &rarr;
             </GrowingUnderline>
           </Link>
         )}
