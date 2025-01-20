@@ -172,8 +172,8 @@ export function AuthorLayout({ children, content }: Props) {
               <p>Несколько мажорых изменений по сравнению с исодным репозиторием:</p>
               <ul>
                 <li>
-                  <Twemoji emoji="atom-symbol" /> Обновление до <strong>React v18</strong>,{' '}
-                  <strong>Next v14</strong>
+                  <Twemoji emoji="atom-symbol" /> Обновление до <strong>React v19</strong>,{' '}
+                  <strong>Next v15</strong>
                 </li>
                 <li>
                   <Twemoji emoji="bar-chart" /> Мониторинг сайта с помощью web аналитики{' '}
