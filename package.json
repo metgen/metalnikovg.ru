@@ -14,6 +14,7 @@
     "seed": "tsx ./scripts/seed.ts"
   },
   "dependencies": {
+    "@giscus/react": "^3.0.0",
     "@headlessui/react": "2.2.0",
     "@next/bundle-analyzer": "15.1.2",
     "@octokit/graphql": "^8.1.1",
