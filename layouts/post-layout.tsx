@@ -81,8 +81,13 @@ export function PostLayout({ content, next, prev, children }: LayoutProps) {
         </div>
         <GradientDivider />
         <div className="space-y-4">
-          <PostNav next={next} nextLabel="Следующая заметка" prev={prev} prevLabel="Предыдущая заметка" />
-          <Comments slug={slug} />
+          <PostNav
+            next={next}
+            nextLabel="Следующая заметка"
+            prev={prev}
+            prevLabel="Предыдущая заметка"
+          />
+          <Comments configs={{ reactions: '1' }} />
         </div>
       </article>
     </Container>

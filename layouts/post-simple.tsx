@@ -20,7 +20,7 @@ interface PostSimpleProps {
 }
 
 export function PostSimple({ content, children }: PostSimpleProps) {
-  let { slug, date, title, type, tags, readingTime, filePath } = content
+  let { slug, date, lastmod, title, type, tags, readingTime, filePath } = content
   let postUrl = `${SITE_METADATA.siteUrl}/${type.toLowerCase()}/${slug}`
 
   return (
@@ -33,7 +33,7 @@ export function PostSimple({ content, children }: PostSimpleProps) {
           <dl>
             <div>
               <dt className="sr-only">Опубликовано</dt>
-              <BlogMeta date={date} slug={slug} readingTime={readingTime} />
+              <BlogMeta date={date} lastmod={lastmod} slug={slug} readingTime={readingTime} />
             </div>
           </dl>
         </div>
@@ -47,7 +47,7 @@ export function PostSimple({ content, children }: PostSimpleProps) {
             </div>
             <SocialShare postUrl={postUrl} title={title} />
           </div>
-          <Comments slug={slug} />
+          <Comments />
         </div>
       </article>
     </Container>
