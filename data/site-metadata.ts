@@ -46,7 +46,7 @@ export const SITE_METADATA = {
       theme: 'light',
       darkTheme: 'transparent_dark',
       themeURL: '',
-      lang: 'en',
+      lang: 'ru',
     },
   },
   search: {
