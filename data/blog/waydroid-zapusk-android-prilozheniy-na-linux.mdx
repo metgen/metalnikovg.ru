@@ -1,0 +1,188 @@
+---
+title: 'Waydroid - запуск Android приложений на Linux'
+date: '2025-01-26'
+lastmod: '2025-01-26'
+tags: ['linux', 'android', 'waydroid']
+summary: 'Запуск Android приложений на Linux при помощи Waydroid'
+images: ['/static/images/blog/waydroid/banner.png']
+authors: ['default']
+---
+
+## Введение
+
+[Waydroid](https://waydro.id/) - это контейнер для загрузки полноценной системы Android OS на системах GNU/Linux, работающих под управлением настольных сред на базе Wayland.
+
+Waydroid переносит все ваши любимые приложения прямо на ваш рабочий стол, работая бок о бок с вашими приложениями Linux. Android внутри контейнера имеет прямой доступ к необходимому оборудованию. Среда выполнения Android поставляется с минимальным настроенным образом системы Android на основе[LineageOS](https://lineageos.org/). В настоящее время используемый образ основан на Android 11.
+
+## Установка
+
+Для Fedora:
+
+```bash
+sudo dnf install waydroid
+```
+
+Для Ubuntu и Debian:
+
+```bash
+sudo apt install curl ca-certificates -y
+curl https://repo.waydro.id | sudo bash
+sudo apt install waydroid -y
+```
+
+Первая команда установит необходимые программы, вторая добавит репозиторий Waydroid, третья установит сам Waydroid.
+
+После установки выполните:
+
+```bash
+sudo systemctl start waydroid-container
+sudo systemctl enable waydroid-container
+```
+
+Первая команда запустит сервис Waydroid, а вторая команда включает автозапуск сервиса при загрузке системы (её нужно выполнить только один раз).
+
+Запустите Waydroid из меню приложений. Когда спросит ссылки на образы Android, вставьте следующие:
+
+- System OTA: `https://ota.waydro.id/system`
+
+- Vendor OTA: `https://ota.waydro.id/vendor`
+
+![](/static/images/blog/waydroid/image-1.png)
+После запуска у вас откроется Android 11 с минимальным набором приложений. В уведомлениях вы увидите ошибку, что устройство не сертифицировано.
+
+![](/static/images/blog/waydroid/image-2.png)
+
+В следующих шагах мы исправим эту ошибку.
+
+## Добавление поддержки архитектуры ARM и сервисов Google
+
+Из коробки Waydroid поддерживает только x86 приложения. Это связано с тем, что Waydroid - это контейнер (по типу Docker, LXC). Для поддержки ARM нужно установить транслятор. Также нужно установить сервисы Google.
+
+Все это нам поможет осуществить [данный скрипт](https://github.com/casualsnek/waydroid_script). Для его запуска должны быть установлены `Python` и `lzip`. Устанавливаются они командами:
+
+```bash
+sudo apt install python && sudo apt install lzip  # для Ubuntu, Debian
+```
+
+```bash
+sudo dnf install python && sudo dnf install lzip  # для Fedora
+```
+
+### Установка и запуск waydroid_script:
+
+```bash
+#скачивание скрипта
+git clone https://github.com/casualsnek/waydroid_script
+#переход в папку со скриптом
+cd waydroid_script
+#создание виртуального окружения в папке venv, чтобы не замусоривать основную систему
+python3 -m venv venv
+#установка необходимых модулей
+venv/bin/pip install -r requirements.txt
+#запуск скрипта
+sudo venv/bin/python3 main.py
+```
+
+Так как Waydroid использует Android 11. Выбирайте его нажав `Enter`.
+
+![](/static/images/blog/waydroid/image-4.png)
+
+Далее выбираем Install.
+
+![](/static/images/blog/waydroid/image-6.png)
+
+На следующем экране выберите нужные пункты нажатием на пробел.
+
+![](/static/images/blog/waydroid/image-8.png)
+
+Выбираем пункты:
+
+- `gapps` (сервисы Google)
+- `widevine` (DRM для медиаконтента)
+- `libndk` (для процессоров от AMD) или `libhoudini` (для процессоров от Intel, или если возникнут проблемы с libndk, всегда можно переустановить).
+- `smartdock` (для использования многооконного режима)
+
+> [!tip]
+> В целом, libhoudini прекрасно работает и на AMD процессорах
+
+> [!note]
+> smartdock - это лаунчер, который добавляет десктопный интерфейс (меню приложений, панель задач и уведомления снизу). Посмотреть на него вы можете [здесь](https://github.com/axel358/smartdock).
+
+> [!warning]
+> Так как скрипт давно не обновлялся, для установки smartdock его нужно немного поправить.
+
+Перейдите в `/waydroid_script/stuff/`, откройте файл `smartdock.py` найдите ссылку в 7 строке и отредактируйте её заменив `/repo/` на `/archive/`.
+
+```python:smartdock.py {7} showLineNumbers
+import os
+import shutil
+from stuff.general import General
+
+class Smartdock(General):
+    id = "smartdock"
+    dl_link = "https://f-droid.org/repo/cu.axel.smartdock_1100.apk"
+    partition = "system"
+    dl_file_name = "smartdock.apk"
+    act_md5 = "f4087d34218eac902a5cca98ee03d215"
+    apply_props = { "qemu.hw.mainkeys" : "1" }
+    skip_extract = True
+    permissions = """<?xml version="1.0" encoding="utf-8"?>
+```
+
+После выбора нужных пунктов нажмите `Enter`.
+
+### Регистрация устройства
+
+Теперь зарегистрируем наше устройство в Google, чтобы работал Google Play. Для этого выполняем:
+
+```bash
+sudo venv/bin/python3 main.py certified
+```
+
+> [!note]
+> Waydroid должен быть запущен. Эта команда выдаст ID и URL, по которому нужно перейти, и в текстовом поле ввести этот ID.
+
+![](/static/images/blog/waydroid/image-9.png)
+
+Если всё сделано правильно - сервисы Google перестанут сыпать ошибки.
+
+## Активация мультиоконного режима
+
+![](/static/images/blog/waydroid/image-7.png)
+
+Для этого в терминале выполните следующую команду:
+
+```bash
+waydroid prop set persist.waydroid.multi_windows true
+```
+
+> [!tip]
+> Для деактивации режима, вместо `true` введите `false`.
+
+Так же можно изменить разрешение окна Waydroid согласно [документации](https://docs.waydro.id/usage/waydroid-prop-options).
+
+Затем перезапустите Waydroid:
+
+```bash
+waydroid session stop
+waydroid session start
+```
+
+> [!note]
+> У такого режима есть минус: интеграции уведомлений в систему пока нет, и чтобы посмотреть уведомления, нужно запустить рабочий стол Waydroid.
+
+Для этого выполните команду:
+
+```bash
+waydroid show-full-ui
+```
+
+> [!tip]
+> Окно Waydroid не имеет верхнюю рамку. Для того чтобы перемещать его в оболочке Gnome, используйте зажатую клавишу `Super`
+
+> [!tip]
+> Скопировав файл или папку по пути `/home/$USER/.local/share/waydroid/data/media/0` они появится в корне вашей файловой системы Android.
+
+## Заключение
+
+Мы установили Waydroid и теперь можем запускать Android приложения на нашей Linux системе.
