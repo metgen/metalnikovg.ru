@@ -83,9 +83,9 @@ export function AuthorLayout({ children, content }: Props) {
               Интересные для меня направления:
               <li>Администрирование: Linux, Windows, Mac OS</li>
               <li>Автоматизация: bash, powershell скриптинг</li>
-              <li>Оркестрация/контейнеризация: Kubernetes, Portainer, Docker</li>
+              <li>Оркестрация/контейнеризация: Docker/Swarm, Kubernetes</li>
               <li>Мониторинг: Prometheus, Zabbix, Grafana</li>
-              <li>Системы виртуализации: Proxmox, KVM, Hyper-V</li>
+              <li>Системы виртуализации: KVM, LXC, Hyper-V</li>
               <li>Сети: TCP/IP, DHCP, DNS, VPN, BGP, PROXY</li>
             </div>
             <div>
