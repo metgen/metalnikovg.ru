@@ -1,7 +1,7 @@
 ---
 title: 'Adguard Home - DNS сервер для дома'
 date: '2024-06-30'
-lastmod: '2024-06-30'
+lastmod: '2025-02-23'
 tags: ['docker', 'homelab', 'networks', 'dns', 'adguard']
 summary: 'Простая установка и настройка домашнего DNS сервера с блокировкой рекламы'
 images: ['/static/images/blog/agh/banner.png']
@@ -10,38 +10,38 @@ authors: ['default']
 
 Adguard Home DNS - проект с открытым исходным кодом, может использоваться как DNS, DHCP сервер, умеет блокировать часть рекламного контента при помощи блокировки DNS запросов, можно устанавливать и настраивать различные фильтры. В этой статье расскажу про установку AGH с использованием docker-compose и настройку домашнего DNS сервера с блокировкой рекламы. Можно использовать на виртуальной машине, отдельном сервере или на одноплатнике типа Rasberry Pi.
 
-## Установка Adguard Home
+## Установка Docker
 
-Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
-
-- OS: Ubuntu 24.04
-- CPU: 2
-- RAM: 2 Gb
-- Disk: 30 Gb
-
-Обновляем пакеты
+**Обновляем пакеты**
 
 ```bash
 apt update && apt upgrade -y
 ```
 
-Устанавливаем docker
+**Устанавливаем docker**
 
 ```bash
-curl -sSL https://get.docker.com | sh
-sudo groupadd docker
-sudo usermod -aG docker ${USER}
-sudo apt install docker-compose
-sudo systemctl enable docker
-sudo reboot
+bash <(curl -sSL https://get.docker.com)
 ```
 
-Настройка docker-compose.yaml
+**Добавляем текущего пользователя в группу `docker`**
+
+```bash
+sudo usermod -aG docker ${USER}
+```
+
+После выполнения команды выйдите из системы и войдите снова, чтобы изменения вступили в силу. Или используйте команду:
+
+```bash
+newgrp docker
+```
+
+## Запуск Adguard Home
 
 На официальной странице Adguard Home на [docker-hub](https://hub.docker.com/r/adguard/adguardhome) приведен пример кода с docker run, но в целях удобства будем использовать docker-compose файл для запуска контейнера.
 
 ```yaml:docker-compose.yml
-version: "3.8"
+---
 services:
   adguardhome:
     image: 'adguard/adguardhome:latest'

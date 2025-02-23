@@ -1,7 +1,7 @@
 ---
 title: 'Повышение безопасности Docker с помощью CrowdSec и Traefik'
 date: '2024-11-23'
-lastmod: '2024-11-23'
+lastmod: '2025-02-23'
 tags: ['docker', 'homelab', 'crowdsec', 'traefik', 'security']
 summary: 'Настройка Crowdsec Bouncer и Traefik Plugin'
 images: ['/static/images/blog/crowdsec-traefik/banner.png']
@@ -39,7 +39,7 @@ services:
       - ./acquis.yaml:/etc/crowdsec/acquis.yaml
       - ./db:/var/lib/crowdsec/data/
       - ./config:/etc/crowdsec/
-      - /home/<user>/traefik/logs:/var/log/traefik/:ro
+      - /home/<user>/docker/traefik/logs:/var/log/traefik/:ro
     networks:
       - proxy
     security_opt:
@@ -60,7 +60,46 @@ labels:
   type: traefik
 
 ---
+listen_addr: 0.0.0.0:7422
+appsec_config: crowdsecurity/virtual-patching
+name: myAppSecComponent
+source: appsec
+labels:
+  type: appsec
 
+---
+source: docker
+container_name:
+ - authentik-server-1
+labels:
+  type: authentik
+docker_host: tcp://192.168.78.100:2375
+
+---
+source: docker
+container_name:
+  - traefik
+labels:
+  type: traefik
+docker_host: tcp://192.168.78.100:2375
+
+---
+source: docker
+container_name:
+  - vaultwarden
+labels:
+  type: Vaultwarden
+docker_host: tcp://192.168.78.102:2375
+
+---
+source: docker
+container_name:
+  - grafana
+labels:
+  type: Grafana
+docker_host: tcp://192.168.78.101:2375
+
+---
 listen_addr: 0.0.0.0:7422
 appsec_config: crowdsecurity/virtual-patching
 name: myAppSecComponent
@@ -84,7 +123,7 @@ experimental:
   plugins:
     crowdsec-bouncer-traefik-plugin:
       moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
-      version: "v1.3.5"
+      version: "v1.4.1"
 ```
 
 Перезапускаем контейнер на всякий случай с флагом пересоздания:
@@ -108,7 +147,7 @@ docker exec crowdsec cscli metrics
 
 ![](/static/images/blog/crowdsec-traefik/file-20241012022127763.png)
 
-> [!note]
+> [!warning]
 > Чтобы crowdsec смог считать логи из traefik, сначала должен быть запущен контейнер crowdsec
 
 ## 3. Подключаем Bouncer:
@@ -123,7 +162,7 @@ docker exec crowdsec cscli bouncers add crowdsecBouncer
 
 Создаем файл динамической конфигурации traefik `crowdsec.yml`
 
-```yml:crowdsec.yml {17} showLineNumbers
+```yml:crowdsec.yml {17, 21-38} showLineNumbers
 http:
   middlewares:
     crowdsec:
@@ -140,39 +179,95 @@ http:
           crowdsecAppsecHost: crowdsec:7422
           crowdsecAppsecFailureBlock: true
           crowdsecAppsecUnreachableBlock: true
-          crowdsecLapiKey: your-lapi-key  # Replace CrowdSec API key (docker exec crowdsec cscli bouncers add crowdsecBouncer)
-          # crowdsecLapiKeyFile: /etc/traefik/cs-privateKey-foo
+          crowdsecLapiKey: your-lapi-key    # Replace CrowdSec API key (docker exec crowdsec cscli bouncers add crowdsecBouncer)
+ #         crowdsecLapiKeyFile: /etc/traefik/cs-privateKey-foo
           crowdsecLapiHost: crowdsec:8080
           crowdsecLapiScheme: http
-          forwardedHeadersTrustedIPs:
-            - 172.18.0.0/24 # Reverse Proxy IP address
-          clientTrustedIPs:
+          forwardedHeadersTrustedIPs: # List of IPs of trusted Proxies that are in front of traefik (ex: Cloudflare)
+            - 73.245.48.0/20
+            - 103.21.244.0/22
+            - 103.22.200.0/22
+            - 103.31.4.0/22
+            - 141.101.64.0/18
+            - 108.162.192.0/18
+            - 190.93.240.0/20
+            - 188.114.96.0/20
+            - 197.234.240.0/22
+            - 198.41.128.0/17
+            - 162.158.0.0/15
+            - 104.16.0.0/13
+            - 104.24.0.0/14
+            - 172.64.0.0/13
+            - 131.0.72.0/22
+          clientTrustedIPs: # List of client IPs to trust, they will bypass any check from the bouncer or cache (useful for LAN or VPN IP)
             - 192.168.78.0/24
 ```
 
-Вставляем полученный `lapi-key` в строку `crowdsecLapiKey`, а в `clientTrustedIPs` указываем нашу локальную подсеть.
+Вставляем полученный `lapi-key` в строку `crowdsecLapiKey`, в `clientTrustedIPs` указываем нашу локальную подсеть или VPN, а в `forwardedHeadersTrustedIPs` указываем список IP адресов **Cloudflare** которые используются для проксирования.
 
-Теперь открываем файл статической конфигурации `traefik.yml` и добавляем в промежуточный слой - `crowdsec@file`
+> [!tip]
+> Так как мы используем **Cloudflare** в качестве прокси перед нашим Traefik, важно настроить **`forwardedHeadersTrustedIPs`** так, чтобы Traefik доверял IP-адресам Cloudflare. Это необходимо для корректного определения реального IP-адреса клиента через заголовок `X-Forwarded-For` и корректной работы баунсера crowdsec.
 
-```yml:traefik.yml
+> [!note]
+> Cloudflare предоставляет [список](https://www.cloudflare.com/ips/) своих IP-адресов, которые используются для проксирования трафика. Эти IP-адреса нужно добавить в **`forwardedHeadersTrustedIPs`**, чтобы Traefik мог доверять заголовкам, переданным от Cloudflare.
+
+Теперь открываем файл статической конфигурации `traefik.yml` добавляем в него промежуточный слой - `crowdsec@file` и `forwardedHeadersTrustedIPs`:
+
+```yml:traefik.yml {26, 52, 7-23, 33-49} showLineNumbers
 api:
   dashboard: true
   debug: true
 entryPoints:
   http:
     address: ":80"
+    forwardedHeaders:
+      trustedIPs:
+        - 73.245.48.0/20
+        - 103.21.244.0/22
+        - 103.22.200.0/22
+        - 103.31.4.0/22
+        - 141.101.64.0/18
+        - 108.162.192.0/18
+        - 190.93.240.0/20
+        - 188.114.96.0/20
+        - 197.234.240.0/22
+        - 198.41.128.0/17
+        - 162.158.0.0/15
+        - 104.16.0.0/13
+        - 104.24.0.0/14
+        - 172.64.0.0/13
+        - 131.0.72.0/22
     http:
       middlewares:
-        - "crowdsec@file"
+        - crowdsec@file
       redirections:
         entryPoint:
           to: https
           scheme: https
   https:
     address: ":443"
+    forwardedHeaders:
+      trustedIPs:
+        - 73.245.48.0/20
+        - 103.21.244.0/22
+        - 103.22.200.0/22
+        - 103.31.4.0/22
+        - 141.101.64.0/18
+        - 108.162.192.0/18
+        - 190.93.240.0/20
+        - 188.114.96.0/20
+        - 197.234.240.0/22
+        - 198.41.128.0/17
+        - 162.158.0.0/15
+        - 104.16.0.0/13
+        - 104.24.0.0/14
+        - 172.64.0.0/13
+        - 131.0.72.0/22
     http:
       middlewares:
-        - "crowdsec@file"
+        - crowdsec@file
+  metrics:
+    address: ":8082"
 
 serversTransport:
   insecureSkipVerify: true
@@ -180,25 +275,30 @@ providers:
   file:
     directory: /config
     watch: true
-  docker:
-    endpoint: "unix:///var/run/docker.sock"
-    exposedByDefault: false
 certificatesResolvers:
   cloudflare:
     acme:
-      email: your-email@mail.com #add your email
+      email: mail@example.com #add your rmail
       storage: acme.json
       dnsChallenge:
         provider: cloudflare
         resolvers:
           - "1.1.1.1:53"
           - "1.0.0.1:53"
-
+metrics:
+  prometheus:
+    entryPoint: metrics
 log:
-  level: "INFO"
+  level: "DEBUG"
   filePath: "/var/log/traefik/traefik.log"
 accessLog:
   filePath: "/var/log/traefik/access.log"
+
+experimental:
+  plugins:
+    crowdsec-bouncer-traefik-plugin:
+      moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+      version: "v1.4.1"
 ```
 
 Перезапускаем **Traefik**:
@@ -206,6 +306,14 @@ accessLog:
 ```bash
 docker compose up -d
 ```
+
+Чтобы убедиться что Traefik определяет реальные IP адреса клиентов, откройте любой из ваших опубликованных ресурсов и посмотрите логи:
+
+```bash
+cat /home/user/docker/traefik/logs/access.log
+```
+
+Вы должны увидеть в них внешний IP-адрес предоставляемый вашим провайдером.
 
 ## 4. Автоматическое обновление баз Crowdsec
 
@@ -298,6 +406,24 @@ docker exec crowdsec cscli decisions delete --ip <ip>
 
 ```bash
 docker exec crowdsec cscli hub update && docker exec crowdsec cscli hub upgrade
+```
+
+Проверка конфигурации CrowdSec (позволяет нам увидеть, какие парсеры и сценарии развернуты):
+
+```bash
+docker exec crowdsec cscli hub list
+```
+
+Показ списка всех сработавших алертов:
+
+```bash
+docker exec crowdsec cscli alerts list
+```
+
+Показ более подробной информации о конкретном алерте:
+
+```bash
+docker exec crowdsec cscli alerts inspect -d <ALERT ID>
 ```
 
 ## Заключение

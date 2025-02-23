@@ -1,7 +1,7 @@
 ---
 title: 'Traefik - обратный прокси для Docker контейнеров'
 date: '2024-11-21'
-lastmod: '2024-11-25'
+lastmod: '2024-02-23'
 tags: ['docker', 'homelab', 'reverse-proxy']
 summary: 'Публикация сервисов из локальной сети в интернет'
 images: ['/static/images/blog/traefik/banner.png']
@@ -27,12 +27,19 @@ apt update && apt upgrade -y
 **Устанавливаем docker**
 
 ```bash
-curl -sSL https://get.docker.com | sh
-sudo groupadd docker
+bash <(curl -sSL https://get.docker.com)
+```
+
+**Добавляем текущего пользователя в группу `docker`**
+
+```bash
 sudo usermod -aG docker ${USER}
-sudo apt install docker-compose
-sudo systemctl enable docker
-sudo reboot
+```
+
+После выполнения команды выйдите из системы и войдите снова, чтобы изменения вступили в силу. Или используйте команду:
+
+```bash
+newgrp docker
 ```
 
 Для запуска будем использовать официальный [Docker образ](https://hub.docker.com/_/traefik), но прежде чем запустить наш контейнер, необходимо создать конфигурационный файл, создать docker-сеть, выпустить API-токен **Cloudflare** для выпуска и обновления сертификатов а так же настроить парольный доступ к панели мониторинга.
@@ -61,13 +68,13 @@ services:
     security_opt:
       - no-new-privileges:true
     networks:
-      proxy: null
+      - proxy
     ports:
       - 80:80
       - 443:443
     environment:
-      - CF_API_EMAIL=youremail@gmail.com
-      - CF_DNS_API_TOKEN=cf_api_token
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -97,6 +104,13 @@ networks:
     external: true
 ```
 
+Создаем файл с переменными окружения `.env`
+
+```bash:.env
+CF_API_EMAIL=your_email
+CF_DNS_API_TOKEN=your_token
+```
+
 ### 1.1 Получения API-токена Cloudflare
 
 Приступаем к выпуске API-токена Cloudflare, как это сделать, можно прочитать в заметке по развертыванию [Nginx Proxy Manager](/blog/publikaciya-lokalnogo-servera-iz-doma-v-interenet). Для этого переходим в наш профиль, в раздел [API](https://dash.cloudflare.com/profile/api-tokens) нажимаем **Create Token -> Edit zone DNS**
@@ -107,7 +121,7 @@ networks:
 
 Копируем полученный токен и сохраняем его в надежном месте, т.к. посмотреть вы его больше не сможете. Если потеряете его то придется перевыпускать.
 
-Возвращаемся в наш файл docker compose и вставляем полученный токен в переменную `CF_DNS_API_TOKEN`, а в `CF_API_EMAIL` вписываем **ваш email** от аккаунта **Cloudflare**.
+Возвращаемся в наш `.env` файл и вставляем полученный токен в переменную `CF_DNS_API_TOKEN`, а в `CF_API_EMAIL` вписываем **ваш email** от аккаунта **Cloudflare**.
 
 ### 1.2 Создаем пароль для панели мониторинга
 
@@ -237,7 +251,7 @@ services:
     ports:
       - 7575:7575
     networks:
-      proxy: null
+      - proxy
     labels:
       - traefik.enable=true
       - traefik.http.routers.homarr.entrypoints=http
@@ -268,7 +282,7 @@ services:
     volumes:
       - ./vw-data:/data
     networks:
-      proxy: null
+      - proxy
     labels:
       - traefik.enable=true
       - traefik.http.routers.vaultwarden.entrypoints=http
@@ -297,7 +311,7 @@ networks:
 Создаем файл `docker-compose` без меток и в volume вместо конкретного файла `config.yml` монтируем директорию `config` в которой будут храниться файлы динамической конфигурации:
 
 ```yaml:docker-compose.yaml {22} showLineNumbers
-version: "3.8"
+---
 services:
   traefik:
     image: traefik:latest
@@ -311,8 +325,8 @@ services:
       - 80:80
       - 443:443
     environment:
-      - CF_API_EMAIL=youremail@gmail.com
-      - CF_DNS_API_TOKEN=cf_api_token
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -325,6 +339,9 @@ networks:
     name: proxy
     external: true
 ```
+
+> [!tip]
+> У меня в последний раз возникли проблемы с выпуском сертификатов, не смотря на то, что системное время было указано верно. Помогло указать переменную окружения `TZ=Europe/Moscow` и отключение вольюма `/etc/localtime:/etc/localtime:ro`
 
 Создаем файл статической конфигурации `traefik.yml` и добавляем директорию `/config` в провайдеры:
 
@@ -358,7 +375,7 @@ providers:
 certificatesResolvers:
   cloudflare:
     acme:
-      email: youremail@gmail.com #add your email
+      email: youremail@example.com #add your email
       storage: acme.json
       dnsChallenge:
         provider: cloudflare
@@ -539,7 +556,7 @@ http:
 
 ```yaml
     networks:
-      proxy: null
+      - proxy
 networks:
   proxy:
     external: true
