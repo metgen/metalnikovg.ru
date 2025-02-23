@@ -1,57 +1,54 @@
 ---
 title: 'Dash. - простая и красивая панель мониторинга сервера'
 date: '2024-07-10'
-lastmod: '2024-07-10'
+lastmod: '2025-02-23'
 tags: ['homelab', 'docker', 'monitoring']
 summary: 'Мониторинг сервера с помощью панели dash. (dashdot)'
-images:
-  [
-    '/static/images/blog/dashdot/banner.png',
-  ]
+images: ['/static/images/blog/dashdot/banner.png']
 authors: ['default']
 ---
 
 [dash.](https://getdashdot.com) — это современная серверная панель мониторинга, работающая на новейших технологиях, разработанная с учетом глассморфизма. Она предназначена для использования на небольших VPS и частных серверах.
 
 Если вам нужен простой и красивый мониторинг сервера, воспользуйтесь dashdot. Он имеет современный веб интервейс, и не требует дополнительных настроек. С помощью него можно мониторить:
+
 - Загрузку процессора
 - Утилизацию оперативной памяти
 - Количество занятого и свободного места на дисках
 - Использование сети
 
-# Установка dash.
+## Установка Docker
 
-Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
-
-- OS: Ubuntu 24.04
-- CPU: 2
-- RAM: 2 Gb
-- Disk: 30 Gb
-
-Обновляем пакеты
+**Обновляем пакеты**
 
 ```bash
 apt update && apt upgrade -y
 ```
 
-Устанавливаем docker
+**Устанавливаем docker**
 
 ```bash
-curl -sSL https://get.docker.com | sh
-sudo groupadd docker
-sudo usermod -aG docker ${USER}
-sudo apt install docker-compose
-sudo systemctl enable docker
-sudo reboot
+bash <(curl -sSL https://get.docker.com)
 ```
 
-Настройка docker-compose.yaml
+**Добавляем текущего пользователя в группу `docker`**
+
+```bash
+sudo usermod -aG docker ${USER}
+```
+
+После выполнения команды выйдите из системы и войдите снова, чтобы изменения вступили в силу. Или используйте команду:
+
+```bash
+newgrp docker
+```
+
+## Запуск Dash.
 
 Воспользуемся официальной [документацией](https://getdashdot.com/docs/installation/docker-compose)
 
 ```yaml:docker-compose.yml
-version: '3.5'
-
+---
 services:
   dash:
     image: mauricenino/dashdot:latest
@@ -62,11 +59,13 @@ services:
     volumes:
       - /:/mnt/host:ro
 ```
+
 Сохраняем файл и запускаем контейнер
 
 ```bash
 docker compose up -d
 ```
+
 После запуска контейнера, открываем Web интерфейс по адресу `http://YOUR-IP:3001`
 
 ![dashdot](/static/images/blog/dashdot/dashdot.png)

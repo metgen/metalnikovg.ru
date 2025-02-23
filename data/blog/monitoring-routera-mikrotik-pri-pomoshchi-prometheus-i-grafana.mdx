@@ -1,7 +1,7 @@
 ---
 title: 'Мониторинг роутера Mikrotik при помощи Prometheus и Grafana'
 date: '2024-06-04'
-lastmod: '2025-01-19'
+lastmod: '2025-02-23'
 tags: ['homelab', 'mikrotik', 'docker', 'prometheus', 'grafana', 'monitoring']
 summary: 'Мониторинг роутера Mikrotik при помощи Prometheus и Grafana в docker контейнере'
 images: ['/static/images/blog/mkt_monitoring/banner.png']
@@ -120,15 +120,28 @@ add action=remote disabled=no prefix=:Wireles topics=wireless
 
 ### Подготовка сервера
 
-Устанавливаем Docker + Docker-compose
+**Обновляем пакеты**
 
 ```bash
-curl -sSL https://get.docker.com | sh
-sudo groupadd docker
+apt update && apt upgrade -y
+```
+
+**Устанавливаем docker**
+
+```bash
+bash <(curl -sSL https://get.docker.com)
+```
+
+**Добавляем текущего пользователя в группу `docker`**
+
+```bash
 sudo usermod -aG docker ${USER}
-sudo apt install docker-compose
-sudo systemctl enable docker
-sudo reboot
+```
+
+После выполнения команды выйдите из системы и войдите снова, чтобы изменения вступили в силу. Или используйте команду:
+
+```bash
+newgrp docker
 ```
 
 Клонируем репозиторий и переходим в директорию `mkt_monitoring`:

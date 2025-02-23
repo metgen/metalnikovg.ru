@@ -1,13 +1,10 @@
 ---
 title: 'Публикация локального сервера из дома в интернет'
 date: '2024-06-19'
-lastmod: '2024-06-19'
+lastmod: '2025-02-23'
 tags: ['docker', 'nginx', 'npm', 'cloudflare', 'dns', 'homelab']
 summary: 'Публикация локального сервера из дома в интернет с помощью Nginx Proxy Manager и Cloudflare'
-images:
-  [
-    '/static/images/blog/npm/banner.png',
-  ]
+images: ['/static/images/blog/npm/banner.png']
 authors: ['default']
 ---
 
@@ -38,31 +35,33 @@ test2.metalnikovg.ru
 
 ![schema](/static/images/blog/npm/schema.png)
 
-## Установка Nginx Proxy Manager
+## Установка Docker
 
-Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
-
-- OS: Ubuntu 24.04
-- CPU: 2
-- RAM: 2 Gb
-- Disk: 30 Gb
-
-Обновляем пакеты
+**Обновляем пакеты**
 
 ```bash
 apt update && apt upgrade -y
 ```
-Устанавливаем docker
+
+**Устанавливаем docker**
 
 ```bash
-curl -sSL https://get.docker.com | sh
-sudo groupadd docker
-sudo usermod -aG docker ${USER}
-sudo apt install docker-compose
-sudo systemctl enable docker
-sudo reboot
+bash <(curl -sSL https://get.docker.com)
 ```
-### Настройка docker-compose.yaml
+
+**Добавляем текущего пользователя в группу `docker`**
+
+```bash
+sudo usermod -aG docker ${USER}
+```
+
+После выполнения команды выйдите из системы и войдите снова, чтобы изменения вступили в силу. Или используйте команду:
+
+```bash
+newgrp docker
+```
+
+## Запуск Nginx Proxy Manager
 
 С помощью этого файла будем запускать Nginx Proxy Manager и Dashboard для nginx proxy manager
 
@@ -93,7 +92,8 @@ services:
     volumes:
         - ./data/logs:/opt/log
 ```
-По умолчанию создается файловая база данных SQLite - data/database.sqlite 
+
+По умолчанию создается файловая база данных SQLite - data/database.sqlite
 
 ```bash
 docker compose up -d
@@ -149,7 +149,7 @@ Password: `changeme`
 
 ![add_ssl_cert](/static/images/blog/npm/add_ssl_cert.png)
 
-Вписываем ваш домен в формате *.example.com, указываем ваш email, выбираем Cloudflare в провайдерах DNS, включаем опцию DNS Challenge, вставляем ваш токен, принимаем условия и нажимаем сохранить. Ждем пока выпустится ваш сертификат, для вашего основного домена и субдоменов 3 уровня. Если вы хотите выпустить сертификат для домена 4 уровня, например best.test.example.com вам понадобится приобрести у CF платную услугу Advaced Certificate Manager.
+Вписываем ваш домен в формате \*.example.com, указываем ваш email, выбираем Cloudflare в провайдерах DNS, включаем опцию DNS Challenge, вставляем ваш токен, принимаем условия и нажимаем сохранить. Ждем пока выпустится ваш сертификат, для вашего основного домена и субдоменов 3 уровня. Если вы хотите выпустить сертификат для домена 4 уровня, например best.test.example.com вам понадобится приобрести у CF платную услугу Advaced Certificate Manager.
 
 После выпуска сертификата, переходим в список наших прокси хостов, жмем три точки напротив хоста нажимаем изменить хост переходим в раздел SSL
 

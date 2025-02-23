@@ -1,13 +1,10 @@
 ---
 title: 'Homarr - дашборд для вашей домашней лаборатории'
 date: '2024-06-25'
-lastmod: '2024-06-25'
+lastmod: '2025-02-23'
 tags: ['homelab', 'homarr', 'docker', 'dashboard']
 summary: 'Простая, но мощная панель управления для вашего домашнего сервера'
-images:
-  [
-    '/static/images/blog/homarr/banner.webp',
-  ]
+images: ['/static/images/blog/homarr/banner.webp']
 authors: ['default']
 ---
 
@@ -38,33 +35,35 @@ Homarr — это проект с открытым исходным кодом, 
 
 ![homarr](/static/images/blog/homarr/homarr.png)
 
-## Установка Homarr
+## Установка Docker
 
-Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
-
-- OS: Ubuntu 24.04
-- CPU: 2
-- RAM: 2 Gb
-- Disk: 30 Gb
-
-Обновляем пакеты
+**Обновляем пакеты**
 
 ```bash
 apt update && apt upgrade -y
 ```
-Устанавливаем docker
+
+**Устанавливаем docker**
 
 ```bash
-curl -sSL https://get.docker.com | sh
-sudo groupadd docker
-sudo usermod -aG docker ${USER}
-sudo apt install docker-compose
-sudo systemctl enable docker
-sudo reboot
+bash <(curl -sSL https://get.docker.com)
 ```
-### Настройка docker-compose.yaml
 
-Создаем файл docker-compose для запуска Homarr сошласно официальной документации
+**Добавляем текущего пользователя в группу `docker`**
+
+```bash
+sudo usermod -aG docker ${USER}
+```
+
+После выполнения команды выйдите из системы и войдите снова, чтобы изменения вступили в силу. Или используйте команду:
+
+```bash
+newgrp docker
+```
+
+### Запуск Homarr
+
+Создаем файл docker-compose для запуска Homarr согласно официальной документации:
 
 ```yaml:docker-compose.yml
 version: '3'
@@ -81,11 +80,13 @@ services:
     ports:
       - '7575:7575'
 ```
+
 Запускаем Homarr
 
 ```bash
 docker compose up -d
 ```
+
 ## Первоначальная настройка
 
 После запуска контейнера, подключаемся к панели управления

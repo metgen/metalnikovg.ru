@@ -1,16 +1,12 @@
 ---
 title: 'Nextcloud - домашнее облачное хранилище'
 date: '2024-07-03'
-lastmod: '2024-07-03'
+lastmod: '2025-02-23'
 tags: ['docker', 'nextcloud', 'homelab']
 summary: 'Установка Nextcloud на домашний сервер при помощи docker-compose'
-images:
-  [
-    '/static/images/blog/nc/banner.png',
-  ]
+images: ['/static/images/blog/nc/banner.png']
 authors: ['default']
 ---
-
 
 **Nextcloud** — это бесплатный облачный сервис с открытым исходным кодом, позволяющий хранить, синхронизировать и обмениваться файлами и документами. Сервис обеспечивает безопасный доступ к данным из любого места и с любого устройства, используя шифрование на уровне передачи и хранения данных и является хорошей альтернативой как различным платным сервисам, так и ownCloud.
 
@@ -18,14 +14,7 @@ Nextcloud предоставляет множество функций, таки
 
 Nextcloud обеспечивает возможность интеграции с другими сервисами, такими как Google Drive, Dropbox и Amazon S3. Это позволяет пользователям обмениваться файлами между различными облачными хранилищами. Nextcloud также позволяет управлять правами доступа к файлам и папкам, что обеспечивает безопасность и конфиденциальность данных. Пользователи могут устанавливать права доступа на уровне групп и отдельных пользователей, а также управлять доступом к файлам через ссылки.
 
-## Установка NextCloud
-
-Для установки будет использоваться виртуальная машина Proxmox со следующим характеристиками:
-
-- OS: Ubuntu 24.04
-- CPU: 2
-- RAM: 2 Gb
-- Disk: 30 Gb
+## Установка Docker
 
 **Обновляем пакеты**
 
@@ -36,17 +25,24 @@ apt update && apt upgrade -y
 **Устанавливаем docker**
 
 ```bash
-curl -sSL https://get.docker.com | sh
-sudo groupadd docker
-sudo usermod -aG docker ${USER}
-sudo apt install docker-compose
-sudo systemctl enable docker
-sudo reboot
+bash <(curl -sSL https://get.docker.com)
 ```
 
-**Настройка docker-compose.yaml**
+**Добавляем текущего пользователя в группу `docker`**
 
-Создаем файл docker-compose со следующим содержимым 
+```bash
+sudo usermod -aG docker ${USER}
+```
+
+После выполнения команды выйдите из системы и войдите снова, чтобы изменения вступили в силу. Или используйте команду:
+
+```bash
+newgrp docker
+```
+
+## Запуск NextCloud
+
+Создаем файл docker-compose со следующим содержимым
 
 ```yaml:docker-compose.yml
 version: '3'
@@ -110,9 +106,11 @@ networks:
     name: cloud
     driver: bridge
 ```
+
 **Описание используемых контейнеров**
 
 Этот файл Docker Compose развернет 3 контейнера:
+
 - Nextcloud
 - База данных MySQL, необходимая для Nextcloud
 - Redis — кэширование памяти. Если вы собираетесь использовать NextCloud для важных файлов, настоятельно рекомендуется настроить Redis.
@@ -126,7 +124,7 @@ networks:
 ```bash
 nextcloud:
     image: nextcloud # Используем официальный docker образ nextcloud
-    container_name: nextcloud # Просто имя контейнера которое поможет вам его идентифицировать 
+    container_name: nextcloud # Просто имя контейнера которое поможет вам его идентифицировать
     restart: unless-stopped # Если произойдет остановка контейнера, то он снова перезапустится
     networks:
       - cloud
@@ -137,7 +135,7 @@ nextcloud:
       - 8088:80
     volumes: # Это важно. сопоставляем каталог файлов внутри контейнера с каталогом на вашем реальном компьютере
       - ./html:/var/www/html # Сопоставьте каталог /var/www/html в контейнере с папкой html в той же папке, что и docker-compose.yml
-      - ./custom_apps:/var/www/html/custom_apps # Эти тома позволяют нам легко взаимодействовать с файлами в контейнере 
+      - ./custom_apps:/var/www/html/custom_apps # Эти тома позволяют нам легко взаимодействовать с файлами в контейнере
       - ./config:/var/www/html/config
       - ./data:/var/www/html/data
       - /mnt/hdd/shared_folder:/var/smb_shares # Подключаем примонтированный диск в /mnt/hdd/shared_folder
@@ -156,7 +154,7 @@ nextcloud:
 
 ```bash
 nextclouddb:
-    image: mariadb # Официальный образ mariadb 
+    image: mariadb # Официальный образ mariadb
     container_name: nextcloud-db
     restart: unless-stopped
     command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW # Честно говоря, не знаю для чего это, если вы знаете, пишите в комментариях
@@ -165,11 +163,11 @@ nextclouddb:
     volumes:
       - ./nextclouddb:/var/lib/mysql
     environment:
-      - PUID=1000 # Должно быть то же самое, что и у других контейнеров 
+      - PUID=1000 # Должно быть то же самое, что и у других контейнеров
       - PGID=1000
       - TZ=Europe/Moscow
       - MYSQL_RANDOM_ROOT_PASSWORD=true
-      - MYSQL_PASSWORD=dbpassword # Та же информация, что была введена в разделе nextcloud 
+      - MYSQL_PASSWORD=dbpassword # Та же информация, что была введена в разделе nextcloud
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
 ```
@@ -179,6 +177,7 @@ nextclouddb:
 ```bash
 docker compose up -d
 ```
+
 После запуска контейнера, открываем Web интерфейс по адресу `http://YOUR-IP:8088` и задаем имя пользователя и пароль администратора. После входа, мы попадем на главную страницу NextCloud, здесь мы можем настроить добавить и настроить виджеты.
 
 ![nextcloud_welcome_page](/static/images/blog/nc/nc_wp.png)
@@ -187,7 +186,7 @@ docker compose up -d
 
 ![nextcloud_files](/static/images/blog/nc/nc_fs.png)
 
-Нажав на иконку пользователя в правом верхнем углу можно перейти в настройки NextCloud, а также добавить необходимые приложения. 
+Нажав на иконку пользователя в правом верхнем углу можно перейти в настройки NextCloud, а также добавить необходимые приложения.
 
 ## Подключение внешнего хранилща
 
@@ -211,6 +210,7 @@ scheme = html
 Forward Hostname = <local IP>/ remote.php/dav
 Forward Port 80
 ```
+
 ```
 Location 2:
 
@@ -238,25 +238,26 @@ sudo nano ~/nextcloud/config/config.php
 Необходимо добавить следующие строки:
 
 ```
-'trusted_domains' => 
+'trusted_domains' =>
  array (
  0 => 'nextcloud.example.com',
  1 => '192.168.78.100:8080',
  ),
  'overwritehost' => 'nextcloud.example.com',
  'overwriteprotocol' => 'https',
- ```
+```
 
 Поскольку мы используем Niginx Proxy Manager, в файл config.php необходимо добавить следующее:
 
 ```
- 'default_phone_region' => 'US' , 
- 'trustedproxies' => 
- массив ( 
- 0 => 'NginxProxyManager' , 
- 1 => '192.168.78.110' , 
+ 'default_phone_region' => 'US' ,
+ 'trustedproxies' =>
+ массив (
+ 0 => 'NginxProxyManager' ,
+ 1 => '192.168.78.110' ,
 ),
 ```
+
 Во избежании некоторых предупреждений не рекомендуется менять строку `'default_phone_region' => 'US'`
 
 Для настройки почтовых оповещений вам необходимо добавить следующие строки в файл конфигурации. Значения необходимо получить у вашего провайдера электронной почты.
@@ -266,13 +267,14 @@ sudo nano ~/nextcloud/config/config.php
  'mail_smtpmode' => 'smtp',
  'mail_sendmailmode' => 'smtp',
  'mail_domain' => 'example.com', # Your email domain
- 'mail_smtphost' => 'smtp.example.com', 
+ 'mail_smtphost' => 'smtp.example.com',
  'mail_smtpport' => '465',
  'mail_smtpauth' => 1,
  'mail_smtpsecure' => 'ssl',
  'mail_smtpname' => 'user@example.com',
  'mail_smtppassword' => 'secretpassword',
 ```
+
 По итогу должно получиться примерно так
 
 ![nextcloud_config](/static/images/blog/nc/nc_config.png)
