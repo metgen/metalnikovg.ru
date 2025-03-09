@@ -1,0 +1,72 @@
+---
+title: 'Watchtower - автоматическое обновление docker контейнеров'
+date: '2025-03-10'
+lastmod: '2025-03-10'
+tags: ['homelab', 'docker']
+summary: 'Watchtower - автоматическое обновление docker контейнеров с уведомлениями в Telegram'
+images: ['/static/images/blog/banners/watchtower_banner.png']
+authors: ['default']
+---
+
+[Watchtower](https://github.com/containrrr/watchtower/) — это инструмент для автоматического обновления Docker-контейнеров. Он отслеживает изменения в образах контейнеров, автоматически обновляет их до последней версии и отправляет уведомления, что упрощает поддержку актуального состояния приложений.
+
+## Основные функции:
+
+1. **Автоматическое обновление**: Watchtower проверяет Docker Hub или другие реестры на наличие обновлений образов и перезапускает контейнеры с новыми версиями.
+2. **Поддержка тегов**: Можно настроить обновление только для определённых тегов образов.
+3. **Оповещения**: Интеграция с уведомлениями (например, через Slack, Discord, Telegram) о выполненных обновлениях.
+4. **Гибкость**: Поддержка различных конфигураций, включая использование приватных реестров.
+
+## Запуск Watchtower
+
+> [!note]
+> В данном примере будут использоваться уведомления в Телеграм.
+
+Создаем файл `docker-compose`:
+
+```yaml:docker-compose.yml
+---
+services:
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    environment:
+      - WATCHTOWER_NOTIFICATIONS_HOSTNAME=${WATCHTOWER_NOTIFICATIONS_HOSTNAME}
+      - WATCHTOWER_NOTIFICATIONS=${WATCHTOWER_NOTIFICATIONS}
+      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL}
+      - TZ=Europe/Moscow
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    command: --rolling-restart --cleanup --schedule "0 0 3 * * *"
+```
+
+Затем создаем `.env` файл в котором указываем `token` и `chat id` телеграм бота:
+
+```bash:.env
+WATCHTOWER_NOTIFICATIONS_HOSTNAME=hostname
+WATCHTOWER_NOTIFICATIONS=shoutrrr
+WATCHTOWER_NOTIFICATION_URL=telegram://<telegram_token>@telegram/?channels=<bot_chat_id>
+```
+
+## Небольшое пояснение переменных и команд
+
+- `WATCHTOWER_NOTIFICATIONS_HOSTNAME=hostname` - хостнейм, который будет использоваться в уведомлениях
+- `WATCHTOWER_NOTIFICATIONS=shoutrrr` - использование библиотека уведомлений `shoutrrr`
+- `--rolling-restart` - перезапускает по одному образу за раз вместо остановки и запуска всех сразу
+- `--cleanup` - удаляет старые образы после обновления
+- `--schedule "0 0 3 * * *"` - интервал проверки и обновлений (в данном примере проверка выполняется каждый день в три часа ночи)
+
+Больше информации можно найти в [документации](https://containrrr.dev/watchtower/) **Watchtower**.
+
+> [!tip]
+> Чтобы исключить контейнер из автоматического обновления необходимо добавить метку:
+>
+> ```yaml
+> labels:
+>   - 'com.centurylinklabs.watchtower.enable=false'
+> ```
+
+## Заключение
+
+Теперь Watchtower будет автоматически обновлять на контейнеры и присылать уведомления в Telegram.
