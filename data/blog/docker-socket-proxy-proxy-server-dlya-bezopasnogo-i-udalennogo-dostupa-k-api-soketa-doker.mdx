@@ -1,0 +1,72 @@
+---
+title: 'Docker Socket Proxy - прокси-сервер для безопасного и удаленного доступа к API сокета Docker'
+date: '2025-03-10'
+lastmod: '2025-03-10'
+tags: ['docker', 'homelab']
+summary: 'Предоставляем безопасный и удаленный доступ к API сокета Docker через Docker Socket Proxy'
+images: ['/static/images/blog/banners/dsp_banner.png']
+authors: ['default']
+---
+
+[Docker Socket Proxy](https://github.com/Tecnativa/docker-socket-proxy) — это инструмент, который предоставляет безопасный и удаленный доступ к API сокета Docker через прокси. Он ограничивает доступ к определённым операциям API сокета Docker, что помогает снизить риски безопасности, связанные с прямым доступом к Docker Socket (`/var/run/docker.sock`).
+
+## Для чего это нужно?
+
+Docker Socket (`/var/run/docker.sock`) — это UNIX-сокет, который позволяет взаимодействовать с Docker Daemon. Если контейнеру предоставлен доступ к этому сокету, он может управлять всеми контейнерами и образами на хосте, что представляет собой угрозу безопасности. Docker Socket Proxy решает эту проблему, ограничивая доступ только к необходимым операциям. Так же с помощью него вы можете получить доступ к удаленному **Docker Socket** через **TCP**-соединение `tcp://hostname_or_ip:2375` для управления контейнерами и получения сведений о них.
+
+### Реальные примеры использования
+
+- У вас имеется несколько Docker хостов и вы хотите управлять контейнерами на них с помощью [Portainer](/blog/portainer-panel-upravleniya-docker), но не хотите разворачивать его или агент на каждом хосте. Развернув **Docker Socket Proxy** на каждом хосте, вы можете подключить все ваши хосты в единственный экземпляр **Portainer** с помощью **API**
+- Мониторинг контейнеров с удаленных Docker хостов с использование одного экземпляра [Uptime Kuma](/blog/uptime-kuma-self-hosted-monitoring)
+- Подключение к контейнерам на удаленных Docker хостах и их мониторинг в приложении **Homepage**
+
+## Как это работает?
+
+Docker Socket Proxy запускается как отдельный контейнер, который выступает в роли прокси между Docker Daemon и другими контейнерами. Он фильтрует запросы к Docker API, разрешая только определённые действия, такие как:
+
+- Запуск/остановка контейнеров.
+- Получение информации о контейнерах.
+- Ограничение доступа к критическим операциям (например, удаление контейнеров или образов).
+
+## Запускаем Docker Socket Proxy
+
+Создаем файл `docker-compose`:
+
+```yaml:docker-compose.yml
+services:
+  dockerproxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    container_name: dockerproxy
+    environment:
+      - INFO=1
+      - CONTAINERS=1
+      - IMAGES=1
+      - VOLUMES=1
+      - SERVICES=1
+      - TASKS=1
+      - NETWORKS=1
+      - POST=1 #When disabled, only `GET` and `HEAD` operations are allowed, meaning any section of the API is read-only.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 2375:2375
+    restart: unless-stopped
+networks: {}
+```
+
+В `enviroment` мы перечисляем разделы API, а с помощью значений `0` или `1` запрещаем или предоставляем к ним доступ. Более подробно про управление доступом к определенным разделам API вы можете прочитать [здесь](https://github.com/Tecnativa/docker-socket-proxy?tab=readme-ov-file#grant-or-revoke-access-to-certain-api-sections)
+
+> [!tip]
+> Чтобы подключить контейнер к Docker Socket Proxy вместо `/var/run/docker.sock` используйте следующую переменную окружения:
+>
+> ```yaml
+> your-app:
+> image: your-app-image
+> environment:
+>   - DOCKER_HOST=tcp://dockerproxy:2375
+> ```
+
+## Заключение
+
+Мы развернули Docker Socket Proxy для безопасного и удаленного подключения к сокету docker.
