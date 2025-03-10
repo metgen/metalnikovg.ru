@@ -1,0 +1,92 @@
+---
+title: 'cAdvisor - мониторинг Docker контейнеров'
+date: '2025-03-11'
+lastmod: '2025-03-11'
+tags: ['homelab', 'docker', 'monitoring', 'grafana', 'prometheus']
+summary: 'cAdvisor - мониторинг Docker контейнеров c интеграцией в Grafana и Prometheus'
+images: ['/static/images/blog/cadvisor/banner.png']
+authors: ['default']
+---
+
+[cAdvisor](https://github.com/google/cadvisor) (сокращение от **Container Advisor**) — это инструмент с открытым исходным кодом, разработанный Google для мониторинга и анализа ресурсов, используемых контейнерами. Он собирает, агрегирует, обрабатывает и экспортирует метрики о работе контейнеров, таких как использование CPU, памяти, сети и диска.
+
+## Основные функции cAdvisor:
+
+- **Мониторинг ресурсов:** Сбор данных об использовании CPU, памяти, сети и диска для каждого контейнера. Отслеживание ограничений ресурсов (limits) и их использования.
+- **Интеграция с Docker:** Автоматически обнаруживает контейнеры на хосте и собирает метрики.
+- **Визуализация данных:** Предоставляет веб-интерфейс для просмотра метрик в реальном времени. Поддерживает интеграцию с инструментами визуализации, такими как Grafana.
+- **Экспорт метрик:** Поддерживает экспорт данных в различные системы мониторинга, такие как Prometheus, InfluxDB, Stackdriver и другие.
+
+## Как работает cAdvisor?
+
+**cAdvisor** работает как демон, который собирает данные о контейнерах через Docker API. Агрегирует и обрабатывает эти данные, затем предоставляет их через REST API или экспортирует в системы мониторинга.
+
+## Запуск cAdvisor
+
+```yaml:docker-compose.yml
+services:
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /cgroup:/cgroup:ro
+    restart: unless-stopped
+    command:
+      - '-port=8090'
+    network_mode: host
+networks: {}
+```
+
+> [!warning]
+> По умолчанию Cadvisor запускается на порту `8080` который часто бывает занят в системе. Переопределить этот порт (например на `8090`) можно двумя способами:
+>
+> - в режиме bridge, указав `ports: - 8090:8080` 
+> - добавить команду изменения порта `command: - '-port=8090'`
+
+## Использование cAdvisor
+
+### Веб-интерфейс:
+
+После запуска откройте браузер и перейдите по адресу `http://server_ip:8090`. На главной странице можно увидеть графики использования CPU, памяти, сети и файловой системы docker хоста, а перейдя в `Docker Containers` вы можете посмотреть список всех контейнеров и информацию о каждом из них.
+
+![cadvisor_web](/static/images/blog/cadvisor/image.png)
+![cadvisor_web_1](/static/images/blog/cadvisor/image1.png)
+![cadvisor_web_2](/static/images/blog/cadvisor/image2.png)
+
+### Интеграция с Prometheus и Grafana:
+
+Для интеграции можно использовать [стек мониторинга Grafana](/blog/monitoring-routera-mikrotik-pri-pomoshchi-prometheus-i-grafana)
+
+#### Настройка Prometheus
+
+cAdvisor предоставляет метрики в формате, совместимом с Prometheus. Чтобы настроить сбор данных добавьте в конфигурацию Prometheus:
+
+```yaml:prometheus.yml
+  - job_name: 'cadvisor'
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+        - gateway.internal:8090 #gateway
+        - monitoring.internal:8090 #monitoring
+        - main.internal:8090 #main
+        - media.internal:8090 #media
+        - cloud.internal:8090 #cloud
+```
+
+#### Мониторинг в Grafana
+
+Для визуализации данных в Grafana будем использовать [cadvisor dashboard](https://grafana.com/grafana/dashboards/19792-cadvisor-dashboard/) с ID `19792`. Он предоставляет детализированную информацию о работе контейнеров, включая использование ресурсов (CPU, память, сеть, диск) и другие ключевые показатели.
+
+![cadvisor_grafana_3](/static/images/blog/cadvisor/image3.png)
+![cadvisor_grafana_4](/static/images/blog/cadvisor/image4.png)
+
+## Заключение
+
+Мы развернули **cAdvisor** и настроили интеграцию с Grafana и Prometheus для мониторинга Docker контейнеров.
