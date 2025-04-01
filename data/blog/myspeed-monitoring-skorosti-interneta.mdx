@@ -1,0 +1,78 @@
+---
+title: 'MySpeed - мониторинг скорости интернета'
+date: '2025-04-01'
+lastmod: '2025-04-01'
+tags: ['homelab', 'monitoring', 'grafana', 'prometheus', 'network']
+summary: 'MySpeed - мониторинг интернет соединения с интеграцией в Prometheus и Grafana'
+images: ['/static/images/blog/myspeed/banner.png']
+authors: ['default']
+---
+
+**MySpeed** — это удобный инструмент для тестирования скорости интернет-соединения с удобной визуализацией. Оно позволяет пользователям измерять скорость загрузки (download), скорость отдачи (upload) и задержку (ping) своего интернет-соединения. Имеет простой и красивый дашборд и API для интеграции с Prometheus.
+
+- Сайт проекта: [myspeed.dev](https://myspeed.dev)
+- Репозиторий проекта: [github.com/gnmyt/myspeed](https://github.com/gnmyt/myspeed)
+
+## Основные функции MySpeed
+
+- **Измерение скорости:** скорость загрузки, скорость отдачи, пинг
+- **История тестов:** сохранение результатов предыдущих тестов для сравнения.
+- **Выбор провайдера для измерений:** [Speedtest by Ookla](https://www.speedtest.net/), [LibreSpeed](https://librespeed.org/), [Cloudflare](https://speed.cloudflare.com/)
+- **Геолокация серверов:** возможность выбора сервера для тестирования скорости.
+- **Настройка частоты измерений**
+- **Уведомления:** возможность настройки уведомлений в Telegram, Discord и др.
+
+## Запуск MySpeed
+
+```yaml:docker-compose.yml
+---
+services:
+  myspeed:
+    image: germannewsmaker/myspeed
+    container_name: myspeed
+    ports:
+      - 5216:5216
+    volumes:
+      - ./myspeed:/myspeed/data
+    restart: unless-stopped
+```
+
+После запуска откройте браузер и перейдите по адресу `http://server_ip:5216`.
+
+![](/static/images/blog/myspeed/image-1.png)
+
+Вы увидите дашборд MySpeed и можете перейти к его настройке.
+
+> [!tip]
+> Если вам нужно найти идентификаторы ближайших серверов вы можете использовать инструменты для обработки JSON, например `jq`
+>
+> ```bash
+> curl -s https://www.speedtest.net/api/js/servers?engine=js | jq '.[] | select(.country == "Russia")'
+> ```
+
+## Интеграция с Prometheus и Grafana:
+
+Для интеграции можно использовать [стек мониторинга Grafana](/blog/monitoring-routera-mikrotik-pri-pomoshchi-prometheus-i-grafana)
+
+### Настройка Prometheus
+
+MySpeed по умолчанию предоставляет метрики в формате, совместимом с Prometheus через API по адресу: `/api/prometheus/metrics`. Чтобы настроить сбор данных добавьте в конфигурацию Prometheus:
+
+```yaml:prometheus.yml
+  - job_name: 'myspeed'
+    scrape_interval: 1m
+    scrape_timeout: 8s
+    metrics_path: /api/prometheus/metrics
+    static_configs:
+      - targets: ['myspeed:5216']
+```
+
+### Мониторинг в Grafana
+
+Для визуализации данных в Grafana будем использовать дашборд [MySpeed](https://grafana.com/grafana/dashboards/21647-myspeed/) с ID `21647`.
+
+![](/static/images/blog/myspeed/image.png)
+
+## Заключение
+
+Мы развернули **MySpeed** и настроили интеграцию с Grafana и Prometheus для мониторинга интернет соединения.
