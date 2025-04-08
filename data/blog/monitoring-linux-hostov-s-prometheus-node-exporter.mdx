@@ -1,0 +1,203 @@
+---
+title: 'Мониторинг Linux хостов с Prometheus Node Exporter'
+date: '2025-04-06'
+lastmod: '2025-04-08'
+tags: ['monitoring', 'docker', 'homelab', 'linux', 'prometheus', 'grafana']
+summary: 'Мониторинг Linux хостов с использованием Prometheus Node Exporter и Grafana'
+images: ['/static/images/blog/node-exporter/banner.png']
+authors: ['default']
+---
+
+[Prometheus Node Exporter](https://github.com/prometheus/node_exporter) — это официальный инструмент для сбора метрик с хостов (серверов) Linux и предоставления их Prometheus. Он предназначен для мониторинга аппаратных и операционных системных метрик, таких как использование CPU, памяти, диска, сети и других параметров.
+
+## Для чего нужен Node Exporter?
+
+Node Exporter собирает метрики с хоста, на котором он запущен, и предоставляет их в формате, понятном Prometheus. Это позволяет:
+
+- **Мониторинг состояние хостов:** использование CPU, памяти, диска, сети, температуру, нагрузку на систему и другие параметры.
+- **Интеграция данные в Prometheus:** Prometheus периодически опрашивает Node Exporter и собирать метрики для дальнейшего анализа.
+- **Визуализация данные:** собранные метрики можно отображать в Grafana или других инструментах визуализации.
+
+## Какие метрики собирает Node Exporter?
+
+Node Exporter предоставляет широкий спектр метрик, включая:
+
+1. **CPU**:
+   - Использование CPU (user, system, idle и другие состояния).
+   - Количество ядер и частота.
+2. **Память**:
+   - Использование оперативной памяти (RAM).
+   - Использование swap-памяти.
+3. **Диск**:
+   - Использование дискового пространства.
+   - Скорость чтения/записи.
+   - Количество операций ввода-вывода (IOPS).
+4. **Сеть**:
+   - Входящий и исходящий трафик.
+   - Количество ошибок и сброшенных пакетов.
+5. **Системные метрики**:
+   - Загрузка системы (load average).
+   - Количество запущенных процессов.
+   - Температура компонентов (если поддерживается).
+6. **Файловые системы**:
+   - Использование места на диске.
+
+## Как работает Node Exporter?
+
+Node Exporter собирает метрики с хоста, используя системные вызовы и файлы в `/proc` и `/sys`. Метрики предоставляются через HTTP-интерфейс в формате, понятном Prometheus (обычно на порту `9100`). Prometheus периодически опрашивает Node Exporter (по умолчанию каждые 15 секунд) и сохраняет метрики в своей базе данных.
+
+## Установка и запуск Node Exporter
+
+### **Запуск через Docker**:
+
+Для запуска будем использовать официальный образ **Node Exporter** с [Docker Hub](https://hub.docker.com/r/prom/node-exporter/), там же вы найдете уже готовый `docker-compose` файл, но нам нужно его немного изменить для корректного сбора метрик с хоста:
+
+```yaml:docker-compose.yml
+services:
+  nodeexporter:
+    image: prom/node-exporter:latest
+    container_name: nodeexporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.rootfs=/rootfs
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($|/)
+    restart: unless-stopped
+    network_mode: host
+networks: {}
+```
+
+#### Разбор конфигурации
+
+- **`/proc:/host/proc:ro`**: Монтирует директорию `/proc` хоста в контейнер для сбора метрик о процессах.
+- **`/sys:/host/sys:ro`**: Монтирует директорию `/sys` хоста для сбора информации о системе.
+- **`/:/rootfs:ro`**: Монтирует корневую файловую систему хоста для сбора метрик о дисках и файловых системах, а **`:ro`** указывает, что доступ будет только для чтения (read-only), что повышает безопасность.
+- **`--path.procfs=/host/proc`**: Указывает путь к смонтированной директории `/proc` внутри контейнера.
+- **`--path.rootfs=/rootfs`**: Указывает путь к корневой файловой системе внутри контейнера.
+- **`--path.sysfs=/host/sys`**: Указывает путь к смонтированной директории `/sys` внутри контейнера.
+- **`--collector.filesystem.mount-points-exclude`**: Исключает определённые точки монтирования (например, `/sys`, `/proc`, `/dev`, `/host`, `/etc`) из сбора метрик, чтобы избежать дублирования или ненужных данных.
+- **`network_mode: host`**: Использует сетевой стек хоста, что позволяет Node Exporter собирать сетевые метрики напрямую. Это важно для корректного сбора данных о сетевых интерфейсах.
+
+> [!warning]
+> При запуске с помощью Docker в LXC контейнере Proxmox, некоторые метрики снимаются некорректно, а некоторые снимаются с хоста Proxmox.
+
+### Установка как службы
+
+1. Скачиваем последнюю версию бинарного файла Node Exporter со [страницы релизов Github](https://github.com/prometheus/node_exporter/releases) и разархивируем её:
+
+```bash
+wget https://github.com/prometheus/node_exporter/releases/download/v1.9.0/node_exporter-1.9.0.linux-amd64.tar.gz
+tar xvfz node_exporter-1.9.0.linux-amd64.tar.gz
+cd node_exporter-1.9.0.linux-amd64
+```
+
+> [!note]
+> Команды изменяются в зависимости от версии. Замените `1.9.0` на актуальную.
+
+2. Перемещаем файл `node_exporter` в папку `/usr/local/bin/`, переходим в нее и проверяем что файл перемещен:
+
+```bash
+mv ./node_exporter /usr/local/bin/
+cd /usr/local/bin && ls
+```
+
+3. Создаём нового пользователя `node_exporter`:
+
+```bash
+useradd --no-create-home --shell /bin/false node_exporter
+```
+
+Так как пользователь `node_exporter` не требует пароля, из соображений безопасности запрещаем:
+
+- `--no-create-home` – создание домашней папки (`/home/node_exporter`).
+- `--shell /bin/false` – вход в систему этому пользователю.
+
+4. Меняем владельца файла `/usr/local/bin/node_exporter`:
+
+```bash
+chown node_exporter:node_exporter /usr/local/bin/node_exporter
+```
+
+Теперь только `node_exporter` может запускать этот файл.
+
+5. Создаем `systemd`-службу:
+
+```bash
+nano /etc/systemd/system/node_exporter.service
+```
+
+Со следующим содержимым:
+
+```bash
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter
+Nice=-10
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+6. Запускаем службу и проверяем ее статус:
+
+```bash
+systemctl daemon-reload
+systemctl start node_exporter
+systemctl enable node_exporter
+systemctl status node_exporter
+```
+
+## Настройка Prometheus для сбора метрик
+
+Добавьте конфигурацию для Node Exporter в файл `prometheus.yml`:
+
+```yaml:prometheus.yml
+- job_name: 'nodeexporter'
+    scrape_interval: 5s
+    basic_auth:
+      username: user
+      password: password
+    static_configs:
+      - targets:
+        - node1.domain.ru:9100 #Remote HTTP Host
+        - gateway.internal:9100 #gateway
+        - monitoring.internal:9100 #monitoring
+        - main.internal:9100 #main
+        - media.internal:9100 #media
+        - cloud.internal:9100 #cloud
+
+  - job_name: 'nodeexporter_https'
+    scrape_interval: 5s
+    scheme: https
+    basic_auth:
+      username: user
+      password: password
+    static_configs:
+      - targets: [mode2.domain.ru] #Remote HTTPS Host
+```
+
+## Визуализация данных
+
+Для визуализации метрик собранных Node Exporter, будем использовать [[Мониторинг роутера Mikrotik при помощи Prometheus и Grafana в docker контейнере|Grafana]] с дашбордом [Node Exporter Full](https://grafana.com/grafana/dashboards/1860) (id:`1860`):
+
+![Node Exporter Full](/static/images/blog/node-exporter/image.png)
+
+или [Node Exporter Quickstart](https://grafana.com/grafana/dashboards/11074) (id:`11074`)
+
+![Node Exporter Quickstart](/static/images/blog/node-exporter/image1.png)
+
+## Заключение:
+
+Мы разобрали запуск **Prometheus Node Exporter** с помощью Docker и как службы systemd. Если вы используете Prometheus, Node Exporter станет незаменимым компонентом вашей системы мониторинга.
