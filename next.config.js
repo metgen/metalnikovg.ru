@@ -72,15 +72,7 @@ module.exports = () => {
       remotePatterns: [
         {
           protocol: 'https',
-          hostname: 'i.gr-assets.com', // Goodreads book covers
-        },
-        {
-          protocol: 'https',
           hostname: 'i.scdn.co', // Spotify album covers
-        },
-        {
-          protocol: 'https',
-          hostname: 'm.media-amazon.com', // IMDB movie posters
         },
       ],
       unoptimized,
