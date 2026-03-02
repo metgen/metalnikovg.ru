@@ -1,15 +1,15 @@
 import { clsx } from 'clsx'
 import { SITE_METADATA } from '~/data/site-metadata'
 import {
-    IconBrandX,
-    IconBrandTelegram,
-    IconBrandVk,
-    IconBrandGithub,
-    IconBrandInstagram,
-    IconMail,
-    IconBrandLinkedin,
-    IconBrandYoutube,
-  } from '@tabler/icons-react';
+  IconBrandX,
+  IconBrandTelegram,
+  IconBrandVk,
+  IconBrandGithub,
+  IconBrandInstagram,
+  IconMail,
+  IconBrandLinkedin,
+  IconBrandYoutube,
+} from '@tabler/icons-react'
 
 export function SocialAccounts({ className }: { className?: string }) {
   return (
@@ -34,6 +34,7 @@ export function SocialAccounts({ className }: { className?: string }) {
         <span className="sr-only">Telegram</span>
         <IconBrandTelegram strokeWidth={1.5} />
       </a>
+      {/*
       <a
         href={SITE_METADATA.vk}
         target="_blank"
@@ -64,6 +65,7 @@ export function SocialAccounts({ className }: { className?: string }) {
         <span className="sr-only">Linkedin</span>
         <IconBrandLinkedin strokeWidth={1.5} />
       </a>
+      */}
       <a
         href={`mailto:${SITE_METADATA.email}`}
         target="_self"
@@ -74,6 +76,7 @@ export function SocialAccounts({ className }: { className?: string }) {
         <span className="sr-only">Mail</span>
         <IconMail strokeWidth={1.5} />
       </a>
+      {/*
       <a
         href={SITE_METADATA.instagram}
         target="_self"
@@ -94,6 +97,7 @@ export function SocialAccounts({ className }: { className?: string }) {
         <span className="sr-only">Youtube</span>
         <IconBrandYoutube strokeWidth={1.5} />
       </a>
+      */}
     </div>
   )
 }
