@@ -207,6 +207,7 @@ export function AuthorLayout({ children, content }: Props) {
                 для этого сайта.
               </p>
             </div>
+            {/*
             <div>
               <h2>Ресурсы</h2>
               <p>
@@ -228,6 +229,7 @@ export function AuthorLayout({ children, content }: Props) {
                 Спасибо за бесплатные ресурсы <Twemoji emoji="folded-hands" />.
               </p>
             </div>
+            */}
             <div>
               <h2>Контакты</h2>
               <SocialAccounts />
