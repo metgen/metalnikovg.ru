@@ -1,0 +1,79 @@
+---
+title: 'Мониторинг Proxmox с использованием OpenTelemetry и Prometheus'
+date: '2026-03-07'
+lastmod: '2026-03-07'
+tags: ['homelab', 'proxmox', 'prometheus', 'grafana', 'opentelemetry']
+summary: 'Мониторинг Proxmox VE с использованием OpenTelemetry, Prometheus и Grafana'
+images: ['/static/images/blog/pve_monitoring/banner.png']
+authors: ['default']
+---
+
+Начиная с [Proxmox Virtual Environment](https://www.proxmox.com/en/products/proxmox-virtual-environment/overview) **v9.0** был добавлен сервер **OpenTelemetry**, который позволяет передавать метрики по протоколу **OTLP/HTTP** на внешний ресивер. Это нововведение теперь позволит нам собирать метрики напрямую с помощью **Prometheus** без использования [PVE-exporter](/blog/monitoring-proxmox-s-pomoshju-grafana).
+
+## Настройка Prometheus
+
+Для включения **OTLP** ресивера в **Prometheus** (если он развернут с помощью Docker) необходимо добавить в секцию `command` cледующую строку:
+
+```yaml
+command:
+  - --web.enable-otlp-receiver
+```
+
+Целиком файл docker-compose будет выглядеть так:
+
+```yaml:docker-compose.yaml {6} showLineNumbers
+volumes:
+  prometheus_storage: {}
+services:
+  prometheus:
+    command:
+      - --web.enable-otlp-receiver
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=10GB
+      - --web.enable-admin-api
+      - --web.enable-lifecycle
+    container_name: prometheus
+    image: prom/prometheus:latest
+    networks:
+      - monitoring
+    ports:
+      - published: 9090
+        target: 9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_storage:/prometheus
+networks:
+  monitoring:
+    name: monitoring
+    driver: bridge
+```
+
+## Настройка OpenTelemetry Server
+
+Перейдите в Proxmox, в раздел `Центр обработки данных` -> `Сервер метрик` -> `Добавить` -> `OpenTelemetry`
+
+![opentelemetry-setup](/static/images/blog/pve_monitoring/file-20260305220802709.png)
+
+Укажите адрес и порт вашего сервера **Prometheus**, а так же путь сбора метрик: `/api/v1/otlp/v1/metrics`
+
+Перейдите в **Prometheus** и проверьте, что метрики собираются по заданию `proxmox-ve`.
+Cделайте запрос:
+
+```json
+{job=`proxmox-ve`}
+```
+
+![opentelemetry-setup](/static/images/blog/pve_monitoring/file-20260305223915227.png)
+
+## Настройки Grafana
+
+После этого можно переходить в Grafana и импортировать [дашборд для Proxmox VE](https://grafana.com/grafana/dashboards/23855-proxmox-ve-dashboard/)
+
+![opentelemetry-setup](/static/images/blog/pve_monitoring/file-20260305223536896.png)
+
+## Заключение
+
+Мы настроили мониторинг Proxmox VE с использованием нового плагина **OpenTelemetry** и **Prometheus** без посредника в виде **PVE-exporter**.
