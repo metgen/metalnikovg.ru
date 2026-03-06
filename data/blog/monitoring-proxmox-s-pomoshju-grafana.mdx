@@ -1,17 +1,17 @@
 ---
 title: 'Мониторинг Proxmox с помощью Grafana'
 date: '2024-08-28'
-lastmod: '2024-08-28'
+lastmod: '2026-03-07'
 tags: ['homelab', 'proxmox', 'prometheus', 'grafana', 'monitoring']
 summary: 'Мониторинг Proxmox с помощью Grafana, Prometheus и PVE-exporter'
-images:
-  [
-    '/static/images/blog/proxmox_monitoring/banner.png',
-  ]
+images: ['/static/images/blog/proxmox_monitoring/banner.png']
 authors: ['default']
 ---
 
-Proxmox сам по себе имеет очень хороший интерфейс для мониторинга всех видов ресурсов, таких как виртуальные машины, контейнеры и хранилища. Поскольку я уже использую prometheus и grafana для 
+> [!note]
+> В Proxmox v9.0 был добавлен сервер **OpenTelemetry**, который позволяет передавать метрики по протоколу **OTLP/HTTP** на внешний ресивер. Это нововведение позволяет собирать метрики [напрямую с помощью Prometheus](/blog/monitoring-proxmox-s-ispolzovaniem-opentelemetry-i-prometheus) без использования PVE-exporter.
+
+Proxmox сам по себе имеет очень хороший интерфейс для мониторинга всех видов ресурсов, таких как виртуальные машины, контейнеры и хранилища. Поскольку я уже использую prometheus и grafana для
 [мониторинга домашней сети](/blog/monitoring-routera-mikrotik-pri-pomoshchi-prometheus-i-grafana), я решил использовать его и для PVE. При желении можно использовать тот-же самый docker-контейнер. Давайте сразу перейдем к установке.
 
 ## Настройки Proxmox VE
