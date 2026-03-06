@@ -105,8 +105,8 @@ export function AuthorLayout({ children, content }: Props) {
             <div>
               <h2>Концепция сайта</h2>
               <p>
-                Это статический сайт с генератором страниц на современном техническом стеке. Он
-                имеет следующие преимущества:
+                Это сайт с архитектурой статической генерации страниц (SSG), реализованный на
+                современном технологическом стеке. Он имеет следующие преимущества:
               </p>
 
               <li>
@@ -142,13 +142,13 @@ export function AuthorLayout({ children, content }: Props) {
               </li>
             </div>
             <div>
-              <h2>Технический стек</h2>
+              <h2>Стек технологий</h2>
               <p>
-                Сайт использует в качестве хостинга{' '}
+                Этот блог развернут на{' '}
                 <a href="https://vercel.com/" target="_blank">
                   Vercel
-                </a>
-                , создан с помощью{' '}
+                </a>{' '}
+                и построен на базе{' '}
                 <a href="https://nextjs.org/" target="_blank">
                   Next.js
                 </a>{' '}
@@ -156,80 +156,58 @@ export function AuthorLayout({ children, content }: Props) {
                 <a href="https://tailwindcss.com/" target="_blank">
                   Tailwind CSS
                 </a>{' '}
-                и шаблона{' '}
+                с использованием шаблона{' '}
                 <a href="https://tailwind-nextjs-starter-blog.vercel.app/">
                   Tailwind Nextjs Starter Blog
                 </a>
                 .
               </p>
-              <p>
-                Некоторые идеи были позаимствованы у{' '}
-                <a href="https://github.com/timlrx" target="_blank">
-                  Timothy Lin
-                </a>{' '}
-                и других контрибьютеров.
-              </p>
-              <p>Несколько мажорых изменений по сравнению с исодным репозиторием:</p>
               <ul>
                 <li>
-                  <Twemoji emoji="atom-symbol" /> Обновление до <strong>React v19</strong>,{' '}
-                  <strong>Next v15</strong>
+                  <Twemoji emoji="atom-symbol" /> <strong>Next.js 15</strong> (App Router) и{' '}
+                  <strong>React 19</strong>.
                 </li>
                 <li>
-                  <Twemoji emoji="bar-chart" /> Мониторинг сайта с помощью web аналитики{' '}
-                  <a href="https://umami.is/" target="_blank">
+                  <Twemoji emoji="artist-palette" /> <strong>Tailwind CSS</strong> для стилизации.
+                </li>
+                <li>
+                  <Twemoji emoji="safety-vest" /> <strong>TypeScript</strong> для обеспечения
+                  строгой типизации.
+                </li>
+                <li>
+                  <Twemoji emoji="open-book" />{' '}
+                  <a href="https://contentlayer.dev/" target="_blank" rel="noreferrer">
+                    Contentlayer
+                  </a>{' '}
+                  и MDX для управления данными блога и сниппетов.
+                </li>
+                <li>
+                  <Twemoji emoji="bar-chart" /> Аналитика сайта с помощью{' '}
+                  <a href="https://umami.is/" target="_blank" rel="noreferrer">
                     Umami
-                  </a>{' '}
+                  </a>
+                  .
                 </li>
                 <li>
-                  <Twemoji emoji="eyes" /> Внесены небольшие изменения в тему, иконки и структуру
-                  сайта.
+                  <Twemoji emoji="first-quarter-moon" /> Темная тема в стиле{' '}
+                  <a
+                    href="https://github.blog/changelog/2021-04-14-dark-and-dimmed-themes-are-now-generally-available/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    github dark dimmed
+                  </a>
+                  .
                 </li>
-                <li>
-                  <Twemoji emoji="man-technologist" /> Этот веб-сайт использует дизайн и код из
-                  репозитория{' '}
-                  <a href="https://github.com/timlrx/tailwind-nextjs-starter-blog" target="_blank">
-                    tailwind-nextjs-starter-blog
-                  </a>{' '}
-                  и включает шаблон tailwind-nextjs-starter-blog, версии 2.0.
-                </li>
-                {/* <li>
-                  <Twemoji emoji="inbox-tray" /> Bumping up <code>mdx-bundler</code>,{' '}
-                  <code>rehype</code>/<code>remark</code> plugins and dependencies to the latest
-                  version
-                </li> */}
               </ul>
               <p>
-                Мой{' '}
+                Исходный код проекта доступен в{' '}
                 <a href="https://github.com/metgen/metalnikovg.ru" target="_blank">
-                  Github репозиторий
+                  моем Github репозиторий
                 </a>{' '}
-                для этого сайта.
-              </p>
-            </div>
-            {/*
-            <div>
-              <h2>Ресурсы</h2>
-              <p>
-                Большое количество изображений взято из{' '}
-                <a href="https://unsplash.com/" target="_blank">
-                  Unsplash
-                </a>
-                , иконок из{' '}
-                <a href="https://www.svgrepo.com/" target="_blank">
-                  SVG Repo
-                </a>
-                , а иллюстраций из{' '}
-                <a href="https://storyset.com/" target="_blank">
-                  Storyset
-                </a>
                 .
               </p>
-              <p>
-                Спасибо за бесплатные ресурсы <Twemoji emoji="folded-hands" />.
-              </p>
             </div>
-            */}
             <div>
               <h2>Контакты</h2>
               <SocialAccounts />
