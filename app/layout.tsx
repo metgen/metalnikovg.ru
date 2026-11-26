@@ -1,3 +1,7 @@
+import '@fontsource-variable/nunito'
+import '@fontsource-variable/nunito/wght-italic.css'
+import '@fontsource-variable/jetbrains-mono'
+import '@fontsource-variable/playpen-sans'
 import 'css/tailwind.css'
 import 'css/twemoji.css'
 import 'react-medium-image-zoom/dist/styles.css'
@@ -5,7 +9,6 @@ import 'remark-github-blockquote-alert/alert.css'
 
 import clsx from 'clsx'
 import type { Metadata } from 'next'
-import { JetBrains_Mono, Nunito, Playpen_Sans } from 'next/font/google'
 import type { SearchConfig } from 'pliny/search'
 import { SearchProvider } from 'pliny/search'
 import { UmamiAnalytics } from '~/components/analytics/umami'
@@ -14,28 +17,6 @@ import { Header } from '~/components/header'
 import { TiltedGridBackground } from '~/components/ui/tilted-grid-background'
 import { SITE_METADATA } from '~/data/site-metadata'
 import { ThemeProviders } from './theme-providers'
-
-const FONT_PLAYPEN_SANS = Playpen_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  weight: ['800'],
-  variable: '--font-playpen-sans',
-})
-
-const FONT_NUNITO = Nunito({
-  subsets: ['latin'],
-  display: 'swap',
-  style: ['normal', 'italic'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-nunito',
-})
-
-const FONT_JETBRAINS_MONO = JetBrains_Mono({
-  weight: ['400', '500'],
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-jetbrains-mono',
-})
 
 export let metadata: Metadata = {
   metadataBase: new URL(SITE_METADATA.siteUrl),
@@ -81,16 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   let basePath = process.env.BASE_PATH || ''
 
   return (
-    <html
-      lang={SITE_METADATA.language}
-      className={clsx(
-        'scroll-smooth',
-        FONT_NUNITO.variable,
-        FONT_JETBRAINS_MONO.variable,
-        FONT_PLAYPEN_SANS.variable
-      )}
-      suppressHydrationWarning
-    >
+    <html lang={SITE_METADATA.language} className="scroll-smooth" suppressHydrationWarning>
       <link
         rel="apple-touch-icon"
         sizes="180x180"

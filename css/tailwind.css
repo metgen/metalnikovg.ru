@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Шрифты Fontsource (подключаются в app/layout.tsx) */
+:root {
+  --font-nunito: 'Nunito Variable';
+  --font-jetbrains-mono: 'JetBrains Mono Variable';
+  --font-playpen-sans: 'Playpen Sans Variable';
+}
+
 .task-list-item::before {
   @apply hidden;
 }
