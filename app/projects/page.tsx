@@ -8,14 +8,18 @@ import { fetchRepoData } from '~/utils/github'
 export let metadata = genPageMetadata({ title: 'Проекты' })
 
 export default async function Projects() {
-  await Promise.all(
-    PROJECTS.map(async (p) => {
-      if (p.repo) {
-        p.repo = await fetchRepoData({ repo: p.repo as string })
+  // Don't mutate the shared PROJECTS array: in dev the page can be rendered
+  // several times, and on the second render `repo` would already be an object,
+  // causing `repo.split is not a function` inside fetchRepoData.
+  let projects = await Promise.all(
+    PROJECTS.map(async (project) => {
+      if (typeof project.repo !== 'string') {
+        return project
       }
+      return { ...project, repo: await fetchRepoData({ repo: project.repo }) }
     })
   )
-  let workProjects = PROJECTS.filter(({ type }) => type === 'work')
+  let workProjects = projects.filter(({ type }) => type === 'work')
 
   return (
     <Container className="pt-4 lg:pt-12">
