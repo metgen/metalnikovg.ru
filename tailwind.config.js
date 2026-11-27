@@ -45,6 +45,10 @@ module.exports = {
           '50%': { transform: 'scale(1.18)' },
           '100%': { transform: 'scale(1)' },
         },
+        'cursor-blink': {
+          '0%, 49%': { opacity: '1' },
+          '50%, 100%': { opacity: '0' },
+        },
       },
       animation: {
         wiggle: 'wiggle 7s linear infinite',
@@ -53,6 +57,7 @@ module.exports = {
         'music-bar-3': 'music-bar-3 .8s linear infinite',
         'music-bar-4': 'music-bar-4 .8s linear infinite',
         'scale-up': 'scale-up 150ms ease-in-out forwards',
+        'cursor-blink': 'cursor-blink 1.1s step-end infinite',
       },
       boxShadow: {
         demure: 'rgba(0, 0, 0, 0.3) 0 35px 60px -15px',
@@ -74,6 +79,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-nunito)', ...fontFamily.sans],
+        mono: ['var(--font-jetbrains-mono)', ...fontFamily.mono],
         greeting: ['var(--font-playpen-sans)'],
       },
       colors: {

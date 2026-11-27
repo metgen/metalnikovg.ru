@@ -9,7 +9,7 @@ import { Link } from '~/components/ui/link'
 import { Twemoji } from '~/components/ui/twemoji'
 import { HEADER_NAV_LINKS, MORE_NAV_LINKS } from '~/data/navigation'
 import { SITE_METADATA } from '~/data/site-metadata'
-import { Logo } from './logo'
+import { ConsoleLogo } from './console-logo'
 
 export function MobileNav() {
   let [navShow, setNavShow] = useState(false)
@@ -70,7 +70,7 @@ export function MobileNav() {
           >
             <DialogPanel className="fixed left-0 top-0 z-70 h-full w-full bg-white opacity-95 duration-300 dark:bg-gray-950 dark:opacity-[0.98]">
               <div className="flex items-center gap-3 pl-10 pt-8">
-                <Logo />
+                <ConsoleLogo className="text-xl" />
               </div>
               <nav
                 ref={navRef}

@@ -8,7 +8,7 @@ import { GrowingUnderline } from '~/components/ui/growing-underline'
 import { Link } from '~/components/ui/link'
 import { HEADER_NAV_LINKS } from '~/data/navigation'
 import { SITE_METADATA } from '~/data/site-metadata'
-import { Logo } from './logo'
+import { ConsoleLogo } from './console-logo'
 import { MobileNav } from './mobile-nav'
 import { MoreLinks } from './more-links'
 import { SearchButton } from './search'
@@ -46,7 +46,7 @@ export function Header() {
       )}
     >
       <div className="flex items-center justify-between gap-3">
-        <Logo />
+        <ConsoleLogo />
         <div className="flex items-center gap-4">
           <div className="hidden gap-1.5 sm:flex">
             {HEADER_NAV_LINKS.map(({ title, href }) => {
