@@ -71,7 +71,7 @@ export const metadata: Metadata = {
   manifest: `${faviconsPath}/site.webmanifest`,
   appleWebApp: {
     title: 'metalnikovg.ru',
-    capable: false,
+    capable: true,
   },
   verification: {
     yandex: 'cfc8dbe278439e74',
