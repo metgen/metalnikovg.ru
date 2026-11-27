@@ -1,6 +1,5 @@
 import type { Author, Snippet } from 'contentlayer/generated'
 import { allAuthors, allSnippets } from 'contentlayer/generated'
-import 'css/prism.css'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { MDXLayoutRenderer } from 'pliny/mdx-components'
