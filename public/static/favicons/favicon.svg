@@ -1,15 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.dev/svgjs" width="800px" height="800px"><svg width="800px" height="800px" viewBox="-4.8 -4.8 57.60 57.60" fill="none" xmlns="http://www.w3.org/2000/svg" transform="matrix(1, 0, 0, 1, 0, 0)rotate(0)">
-
-<g id="SvgjsG1017" stroke-width="0">
-
-<rect x="-4.8" y="-4.8" width="57.60" height="57.60" rx="28.8" fill="#008080" strokewidth="0"></rect>
-
-</g>
-
-<g id="SvgjsG1016" stroke-linecap="round" stroke-linejoin="round"></g>
-
-<g id="SvgjsG1015"> <rect width="48" height="48" fill="white" fill-opacity="0.01"></rect> <rect x="4" y="8" width="40" height="32" rx="2" fill="#008080" stroke="#000000" stroke-width="4" stroke-linejoin="round"></rect> <path d="M12 18L19 24L12 30" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M23 32H36" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path> </g>
-
-</svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
-@media (prefers-color-scheme: dark) { :root { filter: none; } }
-</style></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#013B1F"/><g transform="translate(32 32) scale(.0665) translate(-630 -635.5)"><path fill="#FAF4E3" d="M236 632C275 565 333 525 404 525C440 525 470 534 500 550L545 576C560 584 574 587 590 587C620 587 644 570 668 544Q682 530 694 540L724 569Q734 580 725 592C687 640 640 666 585 666C560 666 538 661 515 649L465 621C445 611 428 607 406 607C366 607 333 628 309 669Q301 683 287 677L241 653Q229 646 236 632Z"/><path fill="#FAF4E3" d="M946 403H1009Q1031 405 1023 425L797 855Q791 868 778 868H708Q689 866 695 848L929 413Q935 403 946 403Z"/></g></svg>

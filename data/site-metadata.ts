@@ -1,5 +1,5 @@
 export const SITE_METADATA = {
-  title: `MetalnikovG.ru`,
+  title: `metalnikovg.ru`,
   author: 'Metalnikov Gennadiy',
   headerTitle: `metalnikovg.ru`,
   description: 'Заметки по IT тематике',

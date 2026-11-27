@@ -1,21 +1,33 @@
 {
   "name": "metalnikovg.ru",
-  "short_name": "metalnikovg.ru",
+  "short_name": "metalnikovg",
   "icons": [
     {
-      "src": "/web-app-manifest-192x192.png",
+      "src": "web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "web-app-manifest-192x192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/web-app-manifest-512x512.png",
+      "src": "web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "web-app-manifest-512x512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#008080",
-  "background_color": "#000000",
+  "theme_color": "#013B1F",
+  "background_color": "#013B1F",
   "display": "standalone"
 }
