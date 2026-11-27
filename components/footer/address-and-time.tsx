@@ -1,6 +1,7 @@
 'use client'
 
 import { Clock, Map } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { GrowingUnderline } from '~/components/ui/growing-underline'
 import { Link } from '~/components/ui/link'
 import { Twemoji } from '~/components/ui/twemoji'
@@ -31,7 +32,18 @@ function getTime() {
 }
 
 export function AddressAndTime() {
-  let { time, diff } = getTime()
+  // Time and timezone difference depend on the visitor's clock, so they must be
+  // computed on the client only. Rendering them during SSR causes a hydration
+  // mismatch (React error #418).
+  let [timeInfo, setTimeInfo] = useState<ReturnType<typeof getTime> | null>(null)
+
+  useEffect(() => {
+    let updateTime = () => setTimeInfo(getTime())
+    updateTime()
+    let timer = window.setInterval(updateTime, 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   return (
     <div className="space-y-2 py-1.5 text-gray-800 dark:text-gray-200">
       <div className="flex items-center gap-2">
@@ -44,7 +56,14 @@ export function AddressAndTime() {
         <Clock className="h-5 w-5" />
         <Link href={TIME_IS}>
           <GrowingUnderline className="font-medium" data-umami-event="footer-time">
-            {time} <span className="text-gray-500 dark:text-gray-400">({diff})</span>
+            {timeInfo ? (
+              <>
+                {timeInfo.time}{' '}
+                <span className="text-gray-500 dark:text-gray-400">({timeInfo.diff})</span>
+              </>
+            ) : (
+              <span className="text-gray-500 dark:text-gray-400">--:--</span>
+            )}
           </GrowingUnderline>
         </Link>
       </div>

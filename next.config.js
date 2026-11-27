@@ -85,6 +85,16 @@ module.exports = () => {
         },
       ]
     },
+    // Same rewrite as in vercel.json, so Umami analytics also works locally
+    // (`vercel.json` rewrites are only applied on Vercel).
+    async rewrites() {
+      return [
+        {
+          source: '/stats/:match*',
+          destination: 'https://eu.umami.is/:match*',
+        },
+      ]
+    },
     webpack: (config) => {
       config.module.rules.push({
         test: /\.svg$/,

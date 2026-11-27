@@ -96,6 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           'bg-white text-gray-900',
           'dark:bg-dark dark:text-gray-100',
         ])}
+        suppressHydrationWarning
       >
         <TiltedGridBackground className="inset-x-0 top-0 z-[-1] h-[50vh]" />
         <ThemeProviders>

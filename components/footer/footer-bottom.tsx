@@ -3,6 +3,7 @@ import { AreaChart, Rss } from 'lucide-react'
 import { Link } from '~/components/ui/link'
 import { SITE_METADATA } from '~/data/site-metadata'
 import { BuiltWith } from './built-with'
+import { CopyrightYear } from './copyright-year'
 import { SpotifyNowPlaying } from '~/components/ui/now-playing'
 export function FooterBottom() {
   return (
@@ -21,7 +22,9 @@ export function FooterBottom() {
       />
       <div className="flex items-center space-x-2">
         <div className="my-2 flex space-x-2 text-sm text-gray-500 dark:text-gray-400">
-          <div>{`Copyright © ${new Date().getFullYear()}`}</div>
+          <div>
+            Copyright © <CopyrightYear />
+          </div>
           <span>{` • `}</span>
           <span>metalnikovg.ru</span>
         </div>
