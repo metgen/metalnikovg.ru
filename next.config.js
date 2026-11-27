@@ -91,7 +91,7 @@ module.exports = () => {
       return [
         {
           source: '/stats/:match*',
-          destination: 'https://eu.umami.is/:match*',
+          destination: 'https://cloud.umami.is/:match*',
         },
       ]
     },
